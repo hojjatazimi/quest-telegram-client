@@ -1,0 +1,32 @@
+# Android / Gradle
+.gradle/
+build/
+**/build/
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+
+# Secrets and developer-only Telegram configuration
+*.keystore
+*.jks
+telegram.properties
+telegram-secrets.*
+*.session
+*.session-journal
+
+# TDLib local data and generated files
+tdlib/
+tdlib-data/
+tdlib-database/
+tdlib-files/
+**/tdlib-data/
+**/tdlib-database/
+**/tdlib-files/
+**/td.binlog
+**/tdlib.log
+
+# OS/editor noise
+.DS_Store
+*.swp
