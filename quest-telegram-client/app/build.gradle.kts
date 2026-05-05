@@ -31,8 +31,8 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
-        buildConfigField("int", "TELEGRAM_API_ID", secretProperty("TELEGRAM_API_ID").toIntOrNull()?.toString() ?: "0")
-        buildConfigField("String", "TELEGRAM_API_HASH", buildConfigString(secretProperty("TELEGRAM_API_HASH")))
+        buildConfigField("int", "TELEGRAM_API_ID", "0")
+        buildConfigField("String", "TELEGRAM_API_HASH", buildConfigString(""))
     }
 
     buildFeatures {
@@ -51,6 +51,8 @@ android {
         create("tdlib") {
             dimension = "telegramBackend"
             buildConfigField("String", "TELEGRAM_BACKEND", "\"tdlib\"")
+            buildConfigField("int", "TELEGRAM_API_ID", secretProperty("TELEGRAM_API_ID").toIntOrNull()?.toString() ?: "0")
+            buildConfigField("String", "TELEGRAM_API_HASH", buildConfigString(secretProperty("TELEGRAM_API_HASH")))
         }
     }
 
