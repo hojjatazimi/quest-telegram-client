@@ -1,5 +1,6 @@
 package com.hojjatazimi.questtelegram.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.hojjatazimi.questtelegram.telegram.MessageItem
 
 @Composable
@@ -28,8 +30,16 @@ fun MessageBubble(
         Surface(
             modifier = Modifier.widthIn(max = 560.dp),
             color = if (message.isOutgoing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-            shape = MaterialTheme.shapes.large,
-            tonalElevation = 1.dp,
+            shape = if (message.isOutgoing) {
+                RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 24.dp, bottomEnd = 8.dp)
+            } else {
+                RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 24.dp)
+            },
+            tonalElevation = if (message.isOutgoing) 4.dp else 1.dp,
+            border = if (message.isOutgoing) null else BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+            ),
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
@@ -58,7 +68,7 @@ fun MessageBubble(
                         color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = message.status.name,
+                        text = message.status.name.lowercase(),
                         style = MaterialTheme.typography.labelMedium,
                         color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )

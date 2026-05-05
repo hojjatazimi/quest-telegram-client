@@ -69,8 +69,17 @@ fun AppNavigation(viewModel: QuestTelegramViewModel) {
             val messages by viewModel.currentMessages.collectAsState()
             ChatScreen(
                 chat = chats.firstOrNull { it.id == chatId },
+                chats = chats,
+                currentChatId = chatId,
                 messages = messages,
                 onBack = { navController.popBackStack() },
+                onOpenChat = { nextChatId ->
+                    viewModel.openChat(nextChatId)
+                    navController.navigate(Routes.chat(nextChatId)) {
+                        popUpTo(Routes.ChatList)
+                        launchSingleTop = true
+                    }
+                },
                 onSend = { text -> viewModel.sendTextMessage(chatId, text) },
             )
         }
