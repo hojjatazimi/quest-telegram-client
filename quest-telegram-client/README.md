@@ -1,6 +1,6 @@
-# Quest Telegram Client MVP
+# TeleQuest MVP
 
-An Android/Kotlin MVP for an unofficial Telegram client optimized for Meta Quest 3 / Meta Horizon OS. The first version runs as a flat 2D Android panel and focuses on a Quest-friendly Compose UI, fake repository mode, and a clean TDLib integration boundary.
+An Android/Kotlin MVP for TeleQuest, an unofficial Telegram client optimized for Meta Quest 3 / Meta Horizon OS. The first version runs as a flat 2D Android panel and focuses on a Quest-friendly Compose UI, fake repository mode, and a clean TDLib integration boundary.
 
 This project is not affiliated with Telegram. It does not use Telegram branding or the official Telegram logo.
 

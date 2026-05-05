@@ -1,4 +1,4 @@
-# Codex Instructions For Quest Telegram Client
+# Codex Instructions For TeleQuest
 
 - Keep fake mode compiling and runnable at all times.
 - Never commit secrets, `local.properties`, Telegram `api_id`, Telegram `api_hash`, phone numbers, auth codes, TDLib session files, TDLib databases, downloaded Telegram files, or user data.

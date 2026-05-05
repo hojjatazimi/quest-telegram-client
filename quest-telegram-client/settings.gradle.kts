@@ -17,5 +17,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "QuestTelegramClient"
+rootProject.name = "TeleQuest"
 include(":app")

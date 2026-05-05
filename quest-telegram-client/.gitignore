@@ -1,7 +1,9 @@
 # Android / Gradle
 .gradle/
+.kotlin/
 build/
 **/build/
+gradle/gradle-daemon-jvm.properties
 local.properties
 
 # Android Studio
