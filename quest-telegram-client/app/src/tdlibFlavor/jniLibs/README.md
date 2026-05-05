@@ -1,4 +1,4 @@
-Place TDLib native libraries here by ABI for the `tdlib` flavor, for example:
+Place official TDLib native libraries here by ABI for the `tdlib` flavor, for example:
 
 - `arm64-v8a/libtdjni.so`
 - `x86_64/libtdjni.so`

@@ -9,5 +9,6 @@
 - Do not add analytics to the MVP.
 - Avoid logging sensitive values, including messages and TDLib payloads.
 - Run `./scripts/pre-commit-check.sh` before committing app changes when the local Android toolchain is available.
+- Run `./scripts/tdlib-check.sh` only when official TDLib JAR/native artifacts are installed locally.
 - Run `./gradlew :app:connectedFakeDebugAndroidTest` only when an emulator or Quest device is connected.
 - Record Quest 3 controller, hand tracking, keyboard, and comfort findings in `docs/quest-validation.md` or the PR before merging UI changes.

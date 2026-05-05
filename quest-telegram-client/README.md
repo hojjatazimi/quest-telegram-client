@@ -60,8 +60,43 @@ Fake mode is safe for UI iteration and does not connect to Telegram.
 - `fakeDebug` and `fakeRelease` use `FakeTelegramRepository` and must compile at all times.
 - `tdlibDebug` and `tdlibRelease` are reserved for real Telegram connectivity work through TDLib.
 - TDLib JARs belong in `app/libs/tdlib-jars/`.
-- TDLib native libraries belong under `app/src/tdlib/jniLibs/<abi>/`.
+- TDLib native libraries belong under `app/src/tdlibFlavor/jniLibs/<abi>/`.
 - Do not add TDLib dependencies to the fake flavor.
+
+## Run Real TDLib Mode
+
+Real mode is implemented behind the `tdlibDebug` variant and uses the official TDLib Java API package names: `org.drinkless.tdlib.Client` and `org.drinkless.tdlib.TdApi`.
+
+1. Build or obtain official TDLib Android artifacts.
+2. Place the generated TDLib Java binding JAR here:
+
+   ```text
+   app/libs/tdlib-jars/tdlib.jar
+   ```
+
+3. Place the Android native libraries by ABI, for example:
+
+   ```text
+   app/src/tdlibFlavor/jniLibs/arm64-v8a/libtdjni.so
+   app/src/tdlibFlavor/jniLibs/x86_64/libtdjni.so
+   ```
+
+4. Set developer credentials in non-committed `local.properties`:
+
+   ```properties
+   TELEGRAM_API_ID=123456
+   TELEGRAM_API_HASH=replace_me
+   ```
+
+5. Select `tdlibDebug` in Android Studio and run on Quest or emulator.
+
+6. Or build from Terminal:
+
+   ```bash
+   ./scripts/tdlib-check.sh
+   ```
+
+The current real-mode implementation supports TDLib parameter setup, phone number submission, auth code submission, two-step password submission, ready state, chat loading, opening a chat, loading message history, sending text messages, and logout. Unsupported flows such as new account registration are reported as errors in the app.
 
 ## Build A Debug APK
 
@@ -102,21 +137,11 @@ Use `docs/quest-validation.md` for controller, hand tracking, keyboard, and comf
 
 The `tdlib` flavor currently compiles against a placeholder wrapper and repository. To connect real Telegram login later:
 
-- Add TDLib Java bindings to `app/libs/tdlib-jars/`.
-- Add TDLib native binaries to `app/src/tdlib/jniLibs/<abi>/`.
-- Implement `TdLibClient.initialize()` to create the TDLib client.
-- Pass TDLib parameters, including app-private database and file paths.
-- Read `api_id` and `api_hash` only from `local.properties` or environment variables at build time.
-- Map TDLib authorization states:
-  - `authorizationStateWaitTdlibParameters`
-  - `authorizationStateWaitPhoneNumber`
-  - `authorizationStateWaitCode`
-  - `authorizationStateWaitPassword`
-  - `authorizationStateReady`
-  - `authorizationStateLoggingOut`
-  - `authorizationStateClosed`
-- Listen for chat and message updates and map them into `ChatSummary` and `MessageItem`.
-- Handle TDLib errors without logging secrets or user content.
+- Add official TDLib Java bindings to `app/libs/tdlib-jars/`.
+- Add official TDLib native binaries to `app/src/tdlibFlavor/jniLibs/<abi>/`.
+- Validate real auth on device with a developer test account.
+- Expand mappings for media, forwarded messages, read receipts, and more authorization states.
+- Improve logout to verify local TDLib database/files are cleared after TDLib confirms logout.
 
 ## Pre-Commit Check
 
@@ -136,6 +161,12 @@ Instrumentation tests are intentionally separate because they require an emulato
 
 ```bash
 ./gradlew :app:connectedFakeDebugAndroidTest
+```
+
+TDLib checks are separate because they require local official TDLib artifacts:
+
+```bash
+./scripts/tdlib-check.sh
 ```
 
 ## Privacy And Security Notes
@@ -162,6 +193,8 @@ Instrumentation tests are intentionally separate because they require an emulato
 - **Quest appears unauthorized:** put on the headset and accept the USB debugging prompt.
 - **App not visible on Quest:** open App Library and switch the filter to Unknown Sources.
 - **TDLib build cannot find binaries:** keep using `fakeDebug` until JARs and native libraries are placed in the documented tdlib-only locations.
+- **Real login stays on an error screen:** confirm `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` are present in `local.properties`, then rebuild `tdlibDebug`.
+- **`UnsatisfiedLinkError` in tdlib mode:** confirm `libtdjni.so` exists under the ABI used by your target device, usually `arm64-v8a` for Quest 3.
 
 ## Meta Horizon Store Readiness Checklist
 

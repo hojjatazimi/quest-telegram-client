@@ -1,0 +1,348 @@
+package com.hojjatazimi.questtelegram.telegram
+
+import android.content.Context
+import com.hojjatazimi.questtelegram.config.TelegramConfig
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import org.drinkless.tdlib.Client
+import org.drinkless.tdlib.TdApi
+
+class TdLibClient(
+    context: Context,
+    private val config: TelegramConfig,
+    private val listener: Listener,
+) {
+    interface Listener {
+        fun onAuthState(authState: AuthState)
+        fun onChats(chats: List<ChatSummary>)
+        fun onMessages(chatId: Long, messages: List<MessageItem>)
+        fun onMessageAdded(chatId: Long, message: MessageItem)
+        fun onMessageUpdated(chatId: Long, message: MessageItem)
+        fun onError(message: String)
+    }
+
+    private val appContext = context.applicationContext
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val chats = ConcurrentHashMap<Long, TdApi.Chat>()
+    private val users = ConcurrentHashMap<Long, TdApi.User>()
+    private val messagesByChat = ConcurrentHashMap<Long, MutableList<MessageItem>>()
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
+
+    @Volatile
+    private var client: Client? = null
+
+    @Volatile
+    private var currentChatId: Long? = null
+
+    fun initialize() {
+        check(config.hasDeveloperCredentials) {
+            "TDLib builds require TELEGRAM_API_ID and TELEGRAM_API_HASH in non-committed configuration."
+        }
+
+        runCatching {
+            Client.execute(TdApi.SetLogVerbosityLevel(1))
+            client = Client.create(
+                { update -> handleUpdate(update) },
+                { error -> listener.onError("TDLib exception: ${error.message ?: "unknown error"}") },
+                { error -> listener.onError("TDLib default error: ${error.message ?: "unknown error"}") },
+            )
+        }.onFailure {
+            listener.onError("TDLib failed to start. Confirm tdlib.jar and libtdjni.so are installed for the tdlib flavor.")
+        }
+    }
+
+    fun tdLibPaths(): TdLibPaths {
+        val tdLibRoot = appContext.filesDir.resolve("tdlib")
+        return TdLibPaths(
+            databasePath = tdLibRoot.resolve("database").absolutePath,
+            filesPath = tdLibRoot.resolve("files").absolutePath,
+        )
+    }
+
+    fun submitPhoneNumber(phone: String) {
+        sendAuth(
+            TdApi.SetAuthenticationPhoneNumber(phone, null),
+            "Failed to submit phone number.",
+        )
+    }
+
+    fun submitAuthCode(code: String) {
+        sendAuth(TdApi.CheckAuthenticationCode(code), "Failed to submit auth code.")
+    }
+
+    fun submitPassword(password: String) {
+        sendAuth(TdApi.CheckAuthenticationPassword(password), "Failed to submit password.")
+    }
+
+    fun loadChats(limit: Int = 50) {
+        client?.send(TdApi.LoadChats(TdApi.ChatListMain(), limit)) { result ->
+            when (result.constructor) {
+                TdApi.Error.CONSTRUCTOR -> {
+                    val error = result as TdApi.Error
+                    if (error.code != 404) {
+                        listener.onError("Failed to load chats.")
+                    }
+                    emitChats()
+                }
+                TdApi.Ok.CONSTRUCTOR -> emitChats()
+            }
+        }
+        emitChats()
+    }
+
+    fun openChat(chatId: Long, limit: Int = 50) {
+        currentChatId = chatId
+        client?.send(TdApi.OpenChat(chatId), silentHandler())
+        client?.send(TdApi.GetChatHistory(chatId, 0, 0, limit, false)) { result ->
+            when (result.constructor) {
+                TdApi.Messages.CONSTRUCTOR -> {
+                    val messages = (result as TdApi.Messages).messages
+                        .mapNotNull(::mapMessage)
+                        .sortedBy { it.id }
+                    messagesByChat[chatId] = messages.toMutableList()
+                    listener.onMessages(chatId, messages)
+                }
+                TdApi.Error.CONSTRUCTOR -> listener.onError("Failed to load messages.")
+            }
+        }
+    }
+
+    fun sendTextMessage(chatId: Long, text: String) {
+        val cleanText = text.trim()
+        if (cleanText.isEmpty()) return
+
+        val content = TdApi.InputMessageText(
+            TdApi.FormattedText(cleanText, null),
+            null,
+            true,
+        )
+        client?.send(TdApi.SendMessage(chatId, 0, null, null, null, content)) { result ->
+            when (result.constructor) {
+                TdApi.Message.CONSTRUCTOR -> mapMessage(result as TdApi.Message)?.let { message ->
+                    upsertMessage(chatId, message)
+                }
+                TdApi.Error.CONSTRUCTOR -> listener.onError("Failed to send message.")
+            }
+        }
+    }
+
+    fun closeAndClearSession() {
+        client?.send(TdApi.LogOut(), silentHandler())
+        currentChatId = null
+        chats.clear()
+        messagesByChat.clear()
+    }
+
+    private fun handleUpdate(update: TdApi.Object) {
+        when (update.constructor) {
+            TdApi.UpdateAuthorizationState.CONSTRUCTOR -> {
+                val state = (update as TdApi.UpdateAuthorizationState).authorizationState
+                handleAuthorizationState(state)
+            }
+            TdApi.UpdateNewChat.CONSTRUCTOR -> {
+                val chat = (update as TdApi.UpdateNewChat).chat
+                chats[chat.id] = chat
+                emitChats()
+            }
+            TdApi.UpdateChatTitle.CONSTRUCTOR -> {
+                val updateTitle = update as TdApi.UpdateChatTitle
+                chats[updateTitle.chatId]?.title = updateTitle.title
+                emitChats()
+            }
+            TdApi.UpdateChatLastMessage.CONSTRUCTOR -> {
+                val lastMessage = update as TdApi.UpdateChatLastMessage
+                chats[lastMessage.chatId]?.let { chat ->
+                    chat.lastMessage = lastMessage.lastMessage
+                    chat.positions = lastMessage.positions
+                }
+                emitChats()
+            }
+            TdApi.UpdateChatReadInbox.CONSTRUCTOR -> {
+                val readInbox = update as TdApi.UpdateChatReadInbox
+                chats[readInbox.chatId]?.unreadCount = readInbox.unreadCount
+                emitChats()
+            }
+            TdApi.UpdateUser.CONSTRUCTOR -> {
+                val user = (update as TdApi.UpdateUser).user
+                users[user.id] = user
+            }
+            TdApi.UpdateNewMessage.CONSTRUCTOR -> {
+                val message = mapMessage((update as TdApi.UpdateNewMessage).message) ?: return
+                upsertMessage(message.chatId, message)
+            }
+            TdApi.UpdateMessageSendSucceeded.CONSTRUCTOR -> {
+                val message = mapMessage((update as TdApi.UpdateMessageSendSucceeded).message) ?: return
+                upsertMessage(message.chatId, message.copy(status = MessageStatus.Sent))
+            }
+            TdApi.UpdateMessageSendFailed.CONSTRUCTOR -> {
+                val failed = update as TdApi.UpdateMessageSendFailed
+                val message = mapMessage(failed.message) ?: return
+                upsertMessage(message.chatId, message.copy(status = MessageStatus.Failed))
+            }
+        }
+    }
+
+    private fun handleAuthorizationState(state: TdApi.AuthorizationState) {
+        when (state.constructor) {
+            TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR -> sendTdLibParameters()
+            TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR -> listener.onAuthState(AuthState.WaitingForPhoneNumber)
+            TdApi.AuthorizationStateWaitCode.CONSTRUCTOR -> listener.onAuthState(AuthState.WaitingForCode)
+            TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR -> listener.onAuthState(AuthState.WaitingForPassword)
+            TdApi.AuthorizationStateReady.CONSTRUCTOR -> {
+                listener.onAuthState(AuthState.Ready)
+                loadChats()
+            }
+            TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR -> listener.onAuthState(AuthState.LoggingOut)
+            TdApi.AuthorizationStateClosed.CONSTRUCTOR -> listener.onAuthState(AuthState.Closed)
+            TdApi.AuthorizationStateWaitOtherDeviceConfirmation.CONSTRUCTOR -> {
+                listener.onError("Confirm this login from another Telegram device, then return to TeleQuest.")
+            }
+            TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR -> {
+                listener.onError("New account registration is not supported in this MVP.")
+            }
+            else -> listener.onError("Unsupported Telegram authorization state.")
+        }
+    }
+
+    private fun sendTdLibParameters() {
+        val paths = tdLibPaths()
+        appContext.filesDir.resolve("tdlib").mkdirs()
+
+        val request = TdApi.SetTdlibParameters()
+        request.databaseDirectory = paths.databasePath
+        request.filesDirectory = paths.filesPath
+        request.useFileDatabase = true
+        request.useChatInfoDatabase = true
+        request.useMessageDatabase = true
+        request.useSecretChats = false
+        request.apiId = config.apiId ?: 0
+        request.apiHash = config.apiHash.orEmpty()
+        request.systemLanguageCode = Locale.getDefault().language.ifBlank { "en" }
+        request.deviceModel = "Meta Quest 3"
+        request.systemVersion = "Meta Horizon OS"
+        request.applicationVersion = "0.1.0"
+
+        sendAuth(request, "Failed to configure TDLib.")
+    }
+
+    private fun sendAuth(function: TdApi.Function, fallbackMessage: String) {
+        client?.send(function) { result ->
+            if (result.constructor == TdApi.Error.CONSTRUCTOR) {
+                listener.onError(fallbackMessage)
+            }
+        } ?: listener.onError("TDLib is not initialized.")
+    }
+
+    private fun emitChats() {
+        val summaries = chats.values
+            .sortedWith(compareByDescending<TdApi.Chat> { mainListOrder(it) }.thenBy { it.title.lowercase(Locale.US) })
+            .map(::mapChat)
+        listener.onChats(summaries)
+    }
+
+    private fun mapChat(chat: TdApi.Chat): ChatSummary {
+        return ChatSummary(
+            id = chat.id,
+            title = chat.title.ifBlank { "Telegram chat" },
+            lastMessage = chat.lastMessage?.let(::messagePreview).orEmpty(),
+            timestamp = chat.lastMessage?.date?.let(::formatUnixTime).orEmpty(),
+            unreadCount = chat.unreadCount,
+            isMuted = chat.notificationSettings?.muteFor != 0,
+        )
+    }
+
+    private fun mapMessage(message: TdApi.Message): MessageItem? {
+        return MessageItem(
+            id = message.id,
+            chatId = message.chatId,
+            senderName = senderName(message),
+            text = messagePreview(message),
+            timestamp = formatUnixTime(message.date),
+            isOutgoing = message.isOutgoing,
+            status = messageStatus(message),
+        )
+    }
+
+    private fun upsertMessage(chatId: Long, message: MessageItem) {
+        val messages = messagesByChat.getOrPut(chatId) { mutableListOf() }
+        val index = messages.indexOfFirst { it.id == message.id }
+        if (index >= 0) {
+            messages[index] = message
+            listener.onMessageUpdated(chatId, message)
+        } else {
+            messages.add(message)
+            messages.sortBy { it.id }
+            listener.onMessageAdded(chatId, message)
+        }
+        if (currentChatId == chatId) {
+            listener.onMessages(chatId, messages.toList())
+        }
+    }
+
+    private fun messagePreview(message: TdApi.Message): String {
+        return when (val content = message.content) {
+            is TdApi.MessageText -> content.text.text
+            is TdApi.MessagePhoto -> content.caption.text.ifBlank { "[Photo]" }
+            is TdApi.MessageVideo -> content.caption.text.ifBlank { "[Video]" }
+            is TdApi.MessageDocument -> content.caption.text.ifBlank { "[Document]" }
+            is TdApi.MessageAudio -> content.caption.text.ifBlank { "[Audio]" }
+            is TdApi.MessageVoiceNote -> "[Voice message]"
+            is TdApi.MessageSticker -> "[Sticker]"
+            else -> "[Unsupported message]"
+        }
+    }
+
+    private fun senderName(message: TdApi.Message): String {
+        if (message.isOutgoing) return "You"
+        return when (val sender = message.senderId) {
+            is TdApi.MessageSenderUser -> users[sender.userId]?.let { user ->
+                listOf(user.firstName, user.lastName)
+                    .filter { it.isNotBlank() }
+                    .joinToString(" ")
+                    .ifBlank { "Telegram user" }
+            } ?: "Telegram user"
+            is TdApi.MessageSenderChat -> chats[sender.chatId]?.title ?: "Telegram chat"
+            else -> "Telegram"
+        }
+    }
+
+    private fun messageStatus(message: TdApi.Message): MessageStatus {
+        return when {
+            message.sendingState is TdApi.MessageSendingStatePending -> MessageStatus.Sending
+            message.sendingState is TdApi.MessageSendingStateFailed -> MessageStatus.Failed
+            message.isOutgoing && message.interactionInfo?.viewCount != null -> MessageStatus.Read
+            else -> MessageStatus.Sent
+        }
+    }
+
+    private fun mainListOrder(chat: TdApi.Chat): Long {
+        return chat.positions
+            ?.firstOrNull { it.list.constructor == TdApi.ChatListMain.CONSTRUCTOR }
+            ?.order
+            ?: 0L
+    }
+
+    private fun formatUnixTime(seconds: Int): String {
+        if (seconds <= 0) return ""
+        return timeFormat.format(Date(seconds * 1000L))
+    }
+
+    private fun silentHandler(): Client.ResultHandler {
+        return Client.ResultHandler { result ->
+            if (result.constructor == TdApi.Error.CONSTRUCTOR) {
+                scope.launch { listener.onError("Telegram request failed.") }
+            }
+        }
+    }
+}
+
+data class TdLibPaths(
+    val databasePath: String,
+    val filesPath: String,
+)
