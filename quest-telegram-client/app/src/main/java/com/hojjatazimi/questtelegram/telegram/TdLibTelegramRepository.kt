@@ -40,31 +40,46 @@ class TdLibTelegramRepository(
 
     override suspend fun submitPhoneNumber(phone: String) {
         // Never log phone numbers, auth codes, passwords, messages, api_hash, session details, or TDLib payloads.
-        _authState.value = AuthState.WaitingForCode
-        // TODO: Send SetAuthenticationPhoneNumber to TDLib.
+        runCatching {
+            client.submitPhoneNumber(phone)
+        }.onSuccess {
+            _authState.value = AuthState.WaitingForCode
+        }.onFailure { error ->
+            _authState.value = AuthState.Error(error.message ?: "Failed to submit phone number.")
+        }
     }
 
     override suspend fun submitAuthCode(code: String) {
-        _authState.value = AuthState.Ready
-        // TODO: Send CheckAuthenticationCode to TDLib.
+        runCatching {
+            client.submitAuthCode(code)
+        }.onSuccess {
+            _authState.value = AuthState.Ready
+        }.onFailure { error ->
+            _authState.value = AuthState.Error(error.message ?: "Failed to submit auth code.")
+        }
     }
 
     override suspend fun submitPassword(password: String) {
-        _authState.value = AuthState.Ready
-        // TODO: Send CheckAuthenticationPassword to TDLib.
+        runCatching {
+            client.submitPassword(password)
+        }.onSuccess {
+            _authState.value = AuthState.Ready
+        }.onFailure { error ->
+            _authState.value = AuthState.Error(error.message ?: "Failed to submit password.")
+        }
     }
 
     override suspend fun loadChats() {
-        // TODO: Load main chat list through TDLib and map chats into ChatSummary.
+        client.loadChats()
     }
 
     override suspend fun openChat(chatId: Long) {
-        // TODO: Open chat, load message history, and publish mapped MessageItem values.
+        client.openChat(chatId)
         _currentMessages.value = emptyList()
     }
 
     override suspend fun sendTextMessage(chatId: Long, text: String) {
-        // TODO: Send inputMessageText through TDLib and expose Sending/Sent/Failed updates.
+        client.sendTextMessage(chatId, text)
     }
 
     override suspend fun logout() {

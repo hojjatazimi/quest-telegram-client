@@ -1,5 +1,6 @@
 package com.hojjatazimi.questtelegram.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ fun ChatRow(
     chat: ChatSummary,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     Surface(
         modifier = modifier
@@ -36,8 +38,12 @@ fun ChatRow(
             .heightIn(min = 88.dp)
             .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        color = if (selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+        tonalElevation = if (selected) 3.dp else 1.dp,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+        ),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
@@ -46,12 +52,12 @@ fun ChatRow(
             Surface(
                 modifier = Modifier.size(52.dp),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondary,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
             ) {
                 Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = chat.title.take(1).uppercase(),
-                        color = MaterialTheme.colorScheme.onSecondary,
+                        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -70,7 +76,7 @@ fun ChatRow(
                     )
                     Text(
                         text = chat.timestamp,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -78,7 +84,7 @@ fun ChatRow(
                     Text(
                         text = chat.lastMessage,
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

@@ -1,6 +1,9 @@
 package com.hojjatazimi.questtelegram.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -20,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -43,82 +49,130 @@ fun LoginScreen(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 48.dp, vertical = 36.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 56.dp, vertical = 42.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
+            Surface(
                 modifier = Modifier
                     .widthIn(max = 720.dp)
                     .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                shape = MaterialTheme.shapes.extraLarge,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+                tonalElevation = 6.dp,
             ) {
-                Text(
-                    text = "Quest Chat MVP",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = "Unofficial Telegram client prototype for Meta Quest 3. Fake mode is active for UI development.",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(
+                    modifier = Modifier.padding(34.dp),
+                    verticalArrangement = Arrangement.spacedBy(22.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    ) {
+                        TeleQuestMark()
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "TeleQuest",
+                                style = MaterialTheme.typography.displaySmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = "Unofficial client",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
 
-                if (authState is AuthState.Error) {
                     Text(
-                        text = authState.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
+                        text = "A calm spatial messaging panel for Quest.",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    if (authState is AuthState.Error) {
+                        Text(
+                            text = authState.message,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+
+                    when (authState) {
+                        AuthState.Uninitialized -> Text(
+                            text = "Preparing sign-in...",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        AuthState.WaitingForCode -> {
+                            QuestTextField(
+                                value = code,
+                                onValueChange = { code = it },
+                                label = "Fake login code",
+                                keyboardType = KeyboardType.Number,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            LargeActionButton(text = "Continue", onClick = { onSubmitCode(code) })
+                        }
+                        AuthState.WaitingForPassword -> {
+                            QuestTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = "Two-step password",
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            LargeActionButton(text = "Unlock", onClick = { onSubmitPassword(password) })
+                        }
+                        else -> {
+                            QuestTextField(
+                                value = phone,
+                                onValueChange = { phone = it },
+                                label = "Phone number",
+                                keyboardType = KeyboardType.Phone,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            LargeActionButton(text = "Continue", onClick = { onSubmitPhone(phone) })
+                        }
+                    }
+
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "Not affiliated with Telegram. Fake mode does not connect to Telegram.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-
-                when (authState) {
-                    AuthState.Uninitialized -> Text(
-                        text = "Preparing sign-in...",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    AuthState.WaitingForCode -> {
-                        QuestTextField(
-                            value = code,
-                            onValueChange = { code = it },
-                            label = "Fake login code",
-                            keyboardType = KeyboardType.Number,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        LargeActionButton(text = "Continue", onClick = { onSubmitCode(code) })
-                    }
-                    AuthState.WaitingForPassword -> {
-                        QuestTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = "Two-step password",
-                            visualTransformation = PasswordVisualTransformation(),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        LargeActionButton(text = "Unlock", onClick = { onSubmitPassword(password) })
-                    }
-                    else -> {
-                        QuestTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = "Phone number",
-                            keyboardType = KeyboardType.Phone,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        LargeActionButton(text = "Continue", onClick = { onSubmitPhone(phone) })
-                    }
-                }
-
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "This app is not affiliated with Telegram. Do not enter real codes in fake mode.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
+        }
+    }
+}
+
+@Composable
+private fun TeleQuestMark() {
+    Surface(
+        modifier = Modifier.size(74.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primary,
+        tonalElevation = 8.dp,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(width = 38.dp, height = 28.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)),
+            )
+            Box(
+                modifier = Modifier
+                    .padding(top = 24.dp, start = 16.dp)
+                    .size(width = 14.dp, height = 14.dp)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)),
+            )
         }
     }
 }
@@ -130,6 +184,7 @@ private fun LargeActionButton(
 ) {
     Button(
         onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp),
