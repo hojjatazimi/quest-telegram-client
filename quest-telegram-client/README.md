@@ -9,6 +9,7 @@ This project is not affiliated with Telegram. It does not use Telegram branding 
 - Android app using Kotlin, Jetpack Compose, Material 3, Coroutines, StateFlow, and MVVM-style state ownership.
 - `fake` flavor is the default development path and does not require TDLib binaries.
 - Fake flow supports entering a phone number, entering a fake code, viewing chats, opening a chat, reading messages, sending text messages, and back navigation.
+- The current UI has been run successfully in an Android emulator and on Meta Quest 3 through Android Studio.
 - `tdlib` flavor contains scaffolding only. It is intentionally isolated until TDLib native binaries and Java bindings are added.
 
 ## Setup
@@ -38,13 +39,29 @@ Regular users should never enter their own `api_id` or `api_hash`. Developer cre
 
 ## Run Fake Mode
 
-Build and install the fake flavor:
+Build and install the fake flavor from Terminal:
 
 ```bash
 ./gradlew :app:assembleFakeDebug
 ```
 
-In Android Studio, choose the `fakeDebug` variant. Fake mode is safe for UI iteration and does not connect to Telegram.
+In Android Studio:
+
+1. Open the `quest-telegram-client` folder itself, not the parent workspace.
+2. Wait for Gradle sync to finish.
+3. Open View > Tool Windows > Build Variants.
+4. Set the `app` module variant to `fakeDebug`.
+5. Press Run for an emulator or connected Quest 3.
+
+Fake mode is safe for UI iteration and does not connect to Telegram.
+
+## Fake Mode Vs TDLib Mode
+
+- `fakeDebug` and `fakeRelease` use `FakeTelegramRepository` and must compile at all times.
+- `tdlibDebug` and `tdlibRelease` are reserved for real Telegram connectivity work through TDLib.
+- TDLib JARs belong in `app/libs/tdlib-jars/`.
+- TDLib native libraries belong under `app/src/tdlib/jniLibs/<abi>/`.
+- Do not add TDLib dependencies to the fake flavor.
 
 ## Build A Debug APK
 
@@ -71,11 +88,22 @@ app/build/outputs/apk/fake/debug/
 
 The app is designed as a landscape 2D Android panel with large touch targets, readable type, generous spacing, and high-contrast surfaces for controller or hand input.
 
+## Install To Quest From Android Studio
+
+1. Enable Developer Mode for the Quest in the Meta Horizon mobile app.
+2. Connect the headset over USB-C.
+3. Accept the USB debugging prompt inside the headset.
+4. In Android Studio, select the Quest device and run the `fakeDebug` variant.
+5. Launch TeleQuest from App Library > Unknown Sources if it does not open automatically.
+
+Use `docs/quest-validation.md` for controller, hand tracking, keyboard, and comfort checks.
+
 ## TDLib Setup Later
 
 The `tdlib` flavor currently compiles against a placeholder wrapper and repository. To connect real Telegram login later:
 
-- Add TDLib native binaries and Java/Kotlin bindings to a dedicated source set or Gradle dependency.
+- Add TDLib Java bindings to `app/libs/tdlib-jars/`.
+- Add TDLib native binaries to `app/src/tdlib/jniLibs/<abi>/`.
 - Implement `TdLibClient.initialize()` to create the TDLib client.
 - Pass TDLib parameters, including app-private database and file paths.
 - Read `api_id` and `api_hash` only from `local.properties` or environment variables at build time.
@@ -89,6 +117,26 @@ The `tdlib` flavor currently compiles against a placeholder wrapper and reposito
   - `authorizationStateClosed`
 - Listen for chat and message updates and map them into `ChatSummary` and `MessageItem`.
 - Handle TDLib errors without logging secrets or user content.
+
+## Pre-Commit Check
+
+Run this before committing app changes:
+
+```bash
+./scripts/pre-commit-check.sh
+```
+
+The script runs:
+
+```bash
+./gradlew :app:testFakeDebugUnitTest :app:assembleFakeDebug
+```
+
+Instrumentation tests are intentionally separate because they require an emulator or device:
+
+```bash
+./gradlew :app:connectedFakeDebugAndroidTest
+```
 
 ## Privacy And Security Notes
 
@@ -104,8 +152,16 @@ The `tdlib` flavor currently compiles against a placeholder wrapper and reposito
 - Real Telegram login is not implemented yet.
 - The TDLib flavor is a scaffold and does not include TDLib binaries.
 - Fake timestamps are static.
-- The UI has not yet been tested on-device in Meta Horizon OS.
-- No automated UI tests are included yet.
+- Controller, hand tracking, and headset keyboard validation should be recorded for each UI iteration.
+
+## Troubleshooting
+
+- **`fakeDebug` is missing:** open `quest-telegram-client` directly, wait for Gradle sync, then check View > Tool Windows > Build Variants.
+- **AndroidX warning:** confirm `gradle.properties` contains `android.useAndroidX=true`.
+- **SDK location not found:** create `local.properties` from `local.properties.example` and set `sdk.dir=/Users/<you>/Library/Android/sdk`.
+- **Quest appears unauthorized:** put on the headset and accept the USB debugging prompt.
+- **App not visible on Quest:** open App Library and switch the filter to Unknown Sources.
+- **TDLib build cannot find binaries:** keep using `fakeDebug` until JARs and native libraries are placed in the documented tdlib-only locations.
 
 ## Meta Horizon Store Readiness Checklist
 

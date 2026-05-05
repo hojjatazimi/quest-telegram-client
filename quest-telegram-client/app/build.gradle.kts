@@ -54,6 +54,13 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("tdlib") {
+            java.srcDir("src/tdlibFlavor/java")
+            jniLibs.srcDir("src/tdlibFlavor/jniLibs")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -77,6 +84,13 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
     implementation("androidx.navigation:navigation-compose:2.8.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    add("tdlibImplementation", fileTree("libs/tdlib-jars") { include("*.jar") })
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
