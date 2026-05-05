@@ -128,7 +128,7 @@ class TdLibClient(
             null,
             true,
         )
-        client?.send(TdApi.SendMessage(chatId, 0, null, null, null, content)) { result ->
+        client?.send(TdApi.SendMessage(chatId, null, null, null, null, content)) { result ->
             when (result.constructor) {
                 TdApi.Message.CONSTRUCTOR -> mapMessage(result as TdApi.Message)?.let { message ->
                     upsertMessage(chatId, message)
@@ -237,7 +237,7 @@ class TdLibClient(
         sendAuth(request, "Failed to configure TDLib.")
     }
 
-    private fun sendAuth(function: TdApi.Function, fallbackMessage: String) {
+    private fun sendAuth(function: TdApi.Function<out TdApi.Object>, fallbackMessage: String) {
         client?.send(function) { result ->
             if (result.constructor == TdApi.Error.CONSTRUCTOR) {
                 listener.onError(fallbackMessage)
