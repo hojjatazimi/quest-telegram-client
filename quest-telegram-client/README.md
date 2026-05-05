@@ -59,7 +59,7 @@ Fake mode is safe for UI iteration and does not connect to Telegram.
 
 - `fakeDebug` and `fakeRelease` use `FakeTelegramRepository` and must compile at all times.
 - `tdlibDebug` and `tdlibRelease` are reserved for real Telegram connectivity work through TDLib.
-- TDLib JARs belong in `app/libs/tdlib-jars/`.
+- TDLib Java sources belong in `app/src/tdlibFlavor/java/org/drinkless/tdlib/`.
 - TDLib native libraries belong under `app/src/tdlibFlavor/jniLibs/<abi>/`.
 - Do not add TDLib dependencies to the fake flavor.
 
@@ -68,17 +68,23 @@ Fake mode is safe for UI iteration and does not connect to Telegram.
 Real mode is implemented behind the `tdlibDebug` variant and uses the official TDLib Java API package names: `org.drinkless.tdlib.Client` and `org.drinkless.tdlib.TdApi`.
 
 1. Build or obtain official TDLib Android artifacts.
-2. Place the generated TDLib Java binding JAR here:
+2. Copy the generated TDLib Java sources here:
 
    ```text
-   app/libs/tdlib-jars/tdlib.jar
+   app/src/tdlibFlavor/java/org/drinkless/tdlib/
    ```
 
-3. Place the Android native libraries by ABI, for example:
+   Official TDLib Android builds commonly output Java source files rather than a `tdlib.jar`. Expected files include:
+
+   ```text
+   app/src/tdlibFlavor/java/org/drinkless/tdlib/Client.java
+   app/src/tdlibFlavor/java/org/drinkless/tdlib/TdApi.java
+   ```
+
+3. Place the Android native library for Quest 3:
 
    ```text
    app/src/tdlibFlavor/jniLibs/arm64-v8a/libtdjni.so
-   app/src/tdlibFlavor/jniLibs/x86_64/libtdjni.so
    ```
 
 4. Set developer credentials in non-committed `local.properties`:
@@ -135,9 +141,9 @@ Use `docs/quest-validation.md` for controller, hand tracking, keyboard, and comf
 
 ## TDLib Setup Later
 
-The `tdlib` flavor currently compiles against a placeholder wrapper and repository. To connect real Telegram login later:
+The `tdlib` flavor compiles the official generated TDLib Java sources directly. To continue real Telegram login work:
 
-- Add official TDLib Java bindings to `app/libs/tdlib-jars/`.
+- Add official TDLib Java sources to `app/src/tdlibFlavor/java/org/drinkless/tdlib/`.
 - Add official TDLib native binaries to `app/src/tdlibFlavor/jniLibs/<abi>/`.
 - Validate real auth on device with a developer test account.
 - Expand mappings for media, forwarded messages, read receipts, and more authorization states.
@@ -192,7 +198,7 @@ TDLib checks are separate because they require local official TDLib artifacts:
 - **SDK location not found:** create `local.properties` from `local.properties.example` and set `sdk.dir=/Users/<you>/Library/Android/sdk`.
 - **Quest appears unauthorized:** put on the headset and accept the USB debugging prompt.
 - **App not visible on Quest:** open App Library and switch the filter to Unknown Sources.
-- **TDLib build cannot find binaries:** keep using `fakeDebug` until JARs and native libraries are placed in the documented tdlib-only locations.
+- **TDLib build cannot find bindings:** keep using `fakeDebug` until official generated Java sources and native libraries are placed in the documented tdlib-only locations.
 - **Real login stays on an error screen:** confirm `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` are present in `local.properties`, then rebuild `tdlibDebug`.
 - **`UnsatisfiedLinkError` in tdlib mode:** confirm `libtdjni.so` exists under the ABI used by your target device, usually `arm64-v8a` for Quest 3.
 

@@ -85,8 +85,6 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
-    add("tdlibImplementation", fileTree("libs/tdlib-jars") { include("*.jar") })
-
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 

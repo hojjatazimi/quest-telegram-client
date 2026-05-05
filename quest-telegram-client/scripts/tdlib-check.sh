@@ -3,12 +3,16 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if ! compgen -G "app/libs/tdlib-jars/*.jar" > /dev/null; then
+if [[ ! -f "app/src/tdlibFlavor/java/org/drinkless/tdlib/Client.java" || ! -f "app/src/tdlibFlavor/java/org/drinkless/tdlib/TdApi.java" ]]; then
   cat <<'EOF'
-Missing TDLib Java binding JAR.
+Missing TDLib Java binding sources.
 
-Place the official generated TDLib Java JAR at:
-  app/libs/tdlib-jars/tdlib.jar
+Copy the official generated TDLib Java source folder into:
+  app/src/tdlibFlavor/java/org/drinkless/tdlib/
+
+Expected files include:
+  app/src/tdlibFlavor/java/org/drinkless/tdlib/Client.java
+  app/src/tdlibFlavor/java/org/drinkless/tdlib/TdApi.java
 
 Then rerun:
   ./scripts/tdlib-check.sh

@@ -18,6 +18,12 @@ class TdLibClient(
     private val config: TelegramConfig,
     private val listener: Listener,
 ) {
+    companion object {
+        init {
+            System.loadLibrary("tdjni")
+        }
+    }
+
     interface Listener {
         fun onAuthState(authState: AuthState)
         fun onChats(chats: List<ChatSummary>)

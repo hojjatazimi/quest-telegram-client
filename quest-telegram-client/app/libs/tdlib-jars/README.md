@@ -1,9 +1,12 @@
-Place official TDLib Java binding JARs here for `tdlibDebug` and `tdlibRelease` builds only.
+TDLib JARs are no longer required for this project.
 
-Expected package names:
+Use the official generated TDLib Java sources instead:
 
-- `org.drinkless.tdlib.Client`
-- `org.drinkless.tdlib.TdApi`
+`app/src/tdlibFlavor/java/org/drinkless/tdlib/`
 
-Do not put session files, TDLib databases, downloaded Telegram files, phone numbers,
-or developer secrets in this directory.
+Expected source files include:
+
+- `Client.java`
+- `TdApi.java`
+
+Do not use unofficial prebuilt TDLib binaries.
