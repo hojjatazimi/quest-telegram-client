@@ -86,11 +86,13 @@ fun AppNavigation(viewModel: QuestTelegramViewModel) {
             val chatId = entry.arguments?.getLong("chatId") ?: return@composable
             val chats by viewModel.chats.collectAsState()
             val messages by viewModel.currentMessages.collectAsState()
+            val messagesState by viewModel.currentMessagesState.collectAsState()
             ChatScreen(
                 chat = chats.firstOrNull { it.id == chatId },
                 chats = chats,
                 currentChatId = chatId,
                 messages = messages,
+                messagesState = messagesState,
                 onBack = { navController.popBackStack() },
                 onOpenChat = { nextChatId ->
                     viewModel.openChat(nextChatId)

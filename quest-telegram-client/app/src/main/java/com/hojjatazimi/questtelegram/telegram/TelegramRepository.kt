@@ -7,6 +7,7 @@ interface TelegramRepository {
     val chats: StateFlow<List<ChatSummary>>
     val chatListState: StateFlow<ChatListState>
     val currentMessages: StateFlow<List<MessageItem>>
+    val currentMessagesState: StateFlow<ChatMessagesState>
 
     suspend fun initialize()
     suspend fun submitPhoneNumber(phone: String)

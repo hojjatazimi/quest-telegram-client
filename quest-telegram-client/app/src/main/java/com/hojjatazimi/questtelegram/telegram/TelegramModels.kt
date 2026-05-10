@@ -16,6 +16,13 @@ sealed class ChatListState {
     data class Error(val message: String) : ChatListState()
 }
 
+sealed class ChatMessagesState {
+    data object Idle : ChatMessagesState()
+    data class Loading(val chatId: Long) : ChatMessagesState()
+    data class Loaded(val chatId: Long, val isEmpty: Boolean) : ChatMessagesState()
+    data class Error(val chatId: Long, val message: String) : ChatMessagesState()
+}
+
 data class MessageItem(
     val id: Long,
     val chatId: Long,

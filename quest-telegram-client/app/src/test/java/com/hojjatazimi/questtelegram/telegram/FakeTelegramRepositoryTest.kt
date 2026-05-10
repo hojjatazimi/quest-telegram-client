@@ -30,6 +30,7 @@ class FakeTelegramRepositoryTest {
         repository.openChat(chatId)
         val initialMessageCount = repository.currentMessages.value.size
         assertTrue(initialMessageCount > 0)
+        assertEquals(ChatMessagesState.Loaded(chatId, isEmpty = false), repository.currentMessagesState.value)
 
         repository.sendTextMessage(chatId, "Testing from fake mode")
         val sentMessage = repository.currentMessages.value.last()
@@ -37,6 +38,7 @@ class FakeTelegramRepositoryTest {
         assertEquals("Testing from fake mode", sentMessage.text)
         assertTrue(sentMessage.isOutgoing)
         assertEquals(MessageStatus.Sent, sentMessage.status)
+        assertEquals(ChatMessagesState.Loaded(chatId, isEmpty = false), repository.currentMessagesState.value)
         assertEquals("Testing from fake mode", repository.chats.value.first { it.id == chatId }.lastMessage)
     }
 
@@ -68,6 +70,7 @@ class FakeTelegramRepositoryTest {
         assertTrue(repository.chats.value.isEmpty())
         assertEquals(ChatListState.Idle, repository.chatListState.value)
         assertTrue(repository.currentMessages.value.isEmpty())
+        assertEquals(ChatMessagesState.Idle, repository.currentMessagesState.value)
     }
 
     @Test

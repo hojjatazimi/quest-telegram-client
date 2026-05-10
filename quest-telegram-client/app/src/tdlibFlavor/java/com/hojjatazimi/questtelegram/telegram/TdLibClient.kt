@@ -31,6 +31,7 @@ class TdLibClient(
         fun onMessages(chatId: Long, messages: List<MessageItem>)
         fun onMessageAdded(chatId: Long, message: MessageItem)
         fun onMessageUpdated(chatId: Long, message: MessageItem)
+        fun onMessageLoadError(chatId: Long, message: String)
         fun onError(message: String)
     }
 
@@ -118,7 +119,7 @@ class TdLibClient(
                     messagesByChat[chatId] = messages.toMutableList()
                     listener.onMessages(chatId, messages)
                 }
-                TdApi.Error.CONSTRUCTOR -> listener.onError("Failed to load messages.")
+                TdApi.Error.CONSTRUCTOR -> listener.onMessageLoadError(chatId, "Failed to load messages.")
             }
         }
     }
@@ -137,7 +138,7 @@ class TdLibClient(
                 TdApi.Message.CONSTRUCTOR -> mapMessage(result as TdApi.Message)?.let { message ->
                     upsertMessage(chatId, message)
                 }
-                TdApi.Error.CONSTRUCTOR -> listener.onError("Failed to send message.")
+                TdApi.Error.CONSTRUCTOR -> listener.onMessageLoadError(chatId, "Failed to send message.")
             }
         }
     }

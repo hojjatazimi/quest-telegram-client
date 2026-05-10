@@ -18,6 +18,9 @@ class FakeTelegramRepository : TelegramRepository {
     private val _currentMessages = MutableStateFlow<List<MessageItem>>(emptyList())
     override val currentMessages: StateFlow<List<MessageItem>> = _currentMessages.asStateFlow()
 
+    private val _currentMessagesState = MutableStateFlow<ChatMessagesState>(ChatMessagesState.Idle)
+    override val currentMessagesState: StateFlow<ChatMessagesState> = _currentMessagesState.asStateFlow()
+
     private var activeChatId: Long? = null
     private var nextMessageId = 10_000L
 
@@ -107,7 +110,12 @@ class FakeTelegramRepository : TelegramRepository {
 
     override suspend fun openChat(chatId: Long) {
         activeChatId = chatId
-        _currentMessages.value = messagesByChat[chatId].orEmpty()
+        _currentMessages.value = emptyList()
+        _currentMessagesState.value = ChatMessagesState.Loading(chatId)
+        delay(180)
+        val messages = messagesByChat[chatId].orEmpty()
+        _currentMessages.value = messages
+        _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = messages.isEmpty())
     }
 
     override suspend fun sendTextMessage(chatId: Long, text: String) {
@@ -125,6 +133,7 @@ class FakeTelegramRepository : TelegramRepository {
         messagesByChat[chatId] = updated
         if (activeChatId == chatId) {
             _currentMessages.value = updated
+            _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = false)
         }
         _chats.value = _chats.value.map { chat ->
             if (chat.id == chatId) chat.copy(lastMessage = cleanText, timestamp = "Now", unreadCount = 0) else chat
@@ -136,6 +145,7 @@ class FakeTelegramRepository : TelegramRepository {
         delay(200)
         activeChatId = null
         _currentMessages.value = emptyList()
+        _currentMessagesState.value = ChatMessagesState.Idle
         _chats.value = emptyList()
         _chatListState.value = ChatListState.Idle
         _authState.value = AuthState.WaitingForPhoneNumber

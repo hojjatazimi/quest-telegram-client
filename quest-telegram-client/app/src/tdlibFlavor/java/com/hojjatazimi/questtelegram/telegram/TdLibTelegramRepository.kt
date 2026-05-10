@@ -24,6 +24,9 @@ class TdLibTelegramRepository(
     private val _currentMessages = MutableStateFlow<List<MessageItem>>(emptyList())
     override val currentMessages: StateFlow<List<MessageItem>> = _currentMessages.asStateFlow()
 
+    private val _currentMessagesState = MutableStateFlow<ChatMessagesState>(ChatMessagesState.Idle)
+    override val currentMessagesState: StateFlow<ChatMessagesState> = _currentMessagesState.asStateFlow()
+
     private var activeChatId: Long? = null
 
     override suspend fun initialize() {
@@ -62,6 +65,8 @@ class TdLibTelegramRepository(
 
     override suspend fun openChat(chatId: Long) {
         activeChatId = chatId
+        _currentMessages.value = emptyList()
+        _currentMessagesState.value = ChatMessagesState.Loading(chatId)
         client.openChat(chatId)
     }
 
@@ -76,6 +81,7 @@ class TdLibTelegramRepository(
         _chats.value = emptyList()
         _chatListState.value = ChatListState.Idle
         _currentMessages.value = emptyList()
+        _currentMessagesState.value = ChatMessagesState.Idle
     }
 
     override fun onAuthState(authState: AuthState) {
@@ -90,12 +96,14 @@ class TdLibTelegramRepository(
     override fun onMessages(chatId: Long, messages: List<MessageItem>) {
         if (activeChatId == chatId) {
             _currentMessages.value = messages
+            _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = messages.isEmpty())
         }
     }
 
     override fun onMessageAdded(chatId: Long, message: MessageItem) {
         if (activeChatId == chatId) {
             _currentMessages.value = (_currentMessages.value + message).distinctBy { it.id }.sortedBy { it.id }
+            _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = false)
         }
     }
 
@@ -104,6 +112,13 @@ class TdLibTelegramRepository(
             _currentMessages.value = _currentMessages.value
                 .map { if (it.id == message.id) message else it }
                 .sortedBy { it.id }
+            _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = _currentMessages.value.isEmpty())
+        }
+    }
+
+    override fun onMessageLoadError(chatId: Long, message: String) {
+        if (activeChatId == chatId) {
+            _currentMessagesState.value = ChatMessagesState.Error(chatId, message)
         }
     }
 

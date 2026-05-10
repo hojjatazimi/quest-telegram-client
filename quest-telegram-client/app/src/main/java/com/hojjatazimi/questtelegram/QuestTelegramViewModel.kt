@@ -12,6 +12,7 @@ class QuestTelegramViewModel(
     val chats = repository.chats
     val chatListState = repository.chatListState
     val currentMessages = repository.currentMessages
+    val currentMessagesState = repository.currentMessagesState
 
     init {
         viewModelScope.launch {

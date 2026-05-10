@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hojjatazimi.questtelegram.telegram.ChatMessagesState
 import com.hojjatazimi.questtelegram.telegram.ChatSummary
 import com.hojjatazimi.questtelegram.telegram.MessageItem
 import com.hojjatazimi.questtelegram.ui.components.ChatRow
@@ -43,6 +44,7 @@ fun ChatScreen(
     chats: List<ChatSummary>,
     currentChatId: Long,
     messages: List<MessageItem>,
+    messagesState: ChatMessagesState,
     onBack: () -> Unit,
     onOpenChat: (Long) -> Unit,
     onSend: (String) -> Unit,
@@ -139,7 +141,7 @@ fun ChatScreen(
                                 .padding(22.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            ConversationHeader(chat = chat)
+                            ConversationHeader(chat = chat, messagesState = messagesState, currentChatId = currentChatId)
                             LazyColumn(
                                 state = messageListState,
                                 modifier = Modifier
@@ -147,11 +149,20 @@ fun ChatScreen(
                                     .weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
+                                val activeState = messagesState.takeIfForChat(currentChatId)
                                 if (messages.isEmpty()) {
                                     item {
-                                        EmptyConversationState()
+                                        ConversationStatePanel(
+                                            messagesState = activeState ?: ChatMessagesState.Loading(currentChatId),
+                                            currentChatId = currentChatId,
+                                        )
                                     }
                                 } else {
+                                    if (activeState is ChatMessagesState.Loading || activeState is ChatMessagesState.Error) {
+                                        item {
+                                            ConversationStateBanner(messagesState = activeState)
+                                        }
+                                    }
                                     items(messages, key = { it.id }) { message ->
                                         MessageBubble(message = message)
                                     }
@@ -197,7 +208,28 @@ fun ChatScreen(
 }
 
 @Composable
-private fun EmptyConversationState() {
+private fun ConversationStatePanel(
+    messagesState: ChatMessagesState,
+    currentChatId: Long,
+) {
+    val state = messagesState.takeIfForChat(currentChatId) ?: ChatMessagesState.Loading(currentChatId)
+    val title = when (state) {
+        ChatMessagesState.Idle -> "No conversation selected"
+        is ChatMessagesState.Loading -> "Loading messages..."
+        is ChatMessagesState.Loaded -> if (state.isEmpty) "No messages yet" else "Messages loaded"
+        is ChatMessagesState.Error -> "Could not load messages"
+    }
+    val detail = when (state) {
+        ChatMessagesState.Idle -> "Open a chat to read messages."
+        is ChatMessagesState.Loading -> "TeleQuest is asking Telegram for this conversation."
+        is ChatMessagesState.Loaded -> if (state.isEmpty) {
+            "This chat has no loaded messages yet."
+        } else {
+            "Messages are ready."
+        }
+        is ChatMessagesState.Error -> state.message
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -209,12 +241,12 @@ private fun EmptyConversationState() {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "No messages loaded yet",
+                text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Telegram may still be syncing this conversation.",
+                text = detail,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -223,7 +255,41 @@ private fun EmptyConversationState() {
 }
 
 @Composable
-private fun ConversationHeader(chat: ChatSummary?) {
+private fun ConversationStateBanner(messagesState: ChatMessagesState) {
+    val text = when (messagesState) {
+        is ChatMessagesState.Loading -> "Refreshing messages..."
+        is ChatMessagesState.Error -> messagesState.message
+        else -> return
+    }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ConversationHeader(
+    chat: ChatSummary?,
+    messagesState: ChatMessagesState,
+    currentChatId: Long,
+) {
+    val statusText = when (val state = messagesState.takeIfForChat(currentChatId)) {
+        is ChatMessagesState.Loading -> "Loading"
+        is ChatMessagesState.Loaded -> if (state.isEmpty) "No messages" else "Ready"
+        is ChatMessagesState.Error -> "Needs attention"
+        ChatMessagesState.Idle,
+        null,
+        -> "Opening"
+    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -235,9 +301,13 @@ private fun ConversationHeader(chat: ChatSummary?) {
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Ready",
+                text = statusText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = if (messagesState.takeIfForChat(currentChatId) is ChatMessagesState.Error) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
             )
         }
         Surface(
@@ -254,4 +324,13 @@ private fun ConversationHeader(chat: ChatSummary?) {
         }
     }
     Spacer(Modifier.height(2.dp))
+}
+
+private fun ChatMessagesState.takeIfForChat(chatId: Long): ChatMessagesState? {
+    return when (this) {
+        ChatMessagesState.Idle -> null
+        is ChatMessagesState.Loading -> takeIf { it.chatId == chatId }
+        is ChatMessagesState.Loaded -> takeIf { it.chatId == chatId }
+        is ChatMessagesState.Error -> takeIf { it.chatId == chatId }
+    }
 }
