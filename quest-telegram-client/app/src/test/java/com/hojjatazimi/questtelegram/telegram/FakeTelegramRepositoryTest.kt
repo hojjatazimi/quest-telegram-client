@@ -1,5 +1,6 @@
 package com.hojjatazimi.questtelegram.telegram
 
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -65,5 +66,25 @@ class FakeTelegramRepositoryTest {
         assertEquals(AuthState.WaitingForPhoneNumber, repository.authState.value)
         assertTrue(repository.chats.value.isEmpty())
         assertTrue(repository.currentMessages.value.isEmpty())
+    }
+
+    @Test
+    fun authSubmissionsExposeInFlightStates() = runTest {
+        val repository = FakeTelegramRepository()
+        val states = mutableListOf<AuthState>()
+
+        val job = launch {
+            repository.authState.collect { states += it }
+        }
+
+        repository.initialize()
+        repository.submitPhoneNumber("+15551234567")
+        repository.submitAuthCode("12345")
+
+        assertTrue(states.contains(AuthState.SubmittingPhoneNumber))
+        assertTrue(states.contains(AuthState.SubmittingCode))
+        assertEquals(AuthState.Ready, repository.authState.value)
+
+        job.cancel()
     }
 }

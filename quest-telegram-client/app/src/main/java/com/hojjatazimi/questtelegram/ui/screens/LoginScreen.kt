@@ -36,6 +36,7 @@ import com.hojjatazimi.questtelegram.ui.components.QuestTextField
 @Composable
 fun LoginScreen(
     authState: AuthState,
+    lastLoginStep: AuthState,
     onSubmitPhone: (String) -> Unit,
     onSubmitCode: (String) -> Unit,
     onSubmitPassword: (String) -> Unit,
@@ -44,6 +45,7 @@ fun LoginScreen(
     var phone by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val visibleStep = if (authState is AuthState.Error) lastLoginStep else authState
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -107,46 +109,91 @@ fun LoginScreen(
                             text = "Preparing sign-in...",
                             style = MaterialTheme.typography.titleMedium,
                         )
-                        AuthState.WaitingForCode -> {
-                            QuestTextField(
-                                value = code,
-                                onValueChange = { code = it },
-                                label = "Fake login code",
-                                keyboardType = KeyboardType.Number,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            LargeActionButton(text = "Continue", onClick = { onSubmitCode(code) })
-                        }
-                        AuthState.WaitingForPassword -> {
-                            QuestTextField(
-                                value = password,
-                                onValueChange = { password = it },
-                                label = "Two-step password",
-                                visualTransformation = PasswordVisualTransformation(),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            LargeActionButton(text = "Unlock", onClick = { onSubmitPassword(password) })
-                        }
-                        else -> {
-                            QuestTextField(
-                                value = phone,
-                                onValueChange = { phone = it },
-                                label = "Phone number",
-                                keyboardType = KeyboardType.Phone,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            LargeActionButton(text = "Continue", onClick = { onSubmitPhone(phone) })
-                        }
+                        AuthState.SubmittingPhoneNumber -> Text(
+                            text = "Sending login code...",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        AuthState.SubmittingCode -> Text(
+                            text = "Checking login code...",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        AuthState.SubmittingPassword -> Text(
+                            text = "Checking password...",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        else -> AuthForm(
+                            visibleStep = visibleStep,
+                            phone = phone,
+                            onPhoneChange = { phone = it },
+                            code = code,
+                            onCodeChange = { code = it },
+                            password = password,
+                            onPasswordChange = { password = it },
+                            onSubmitPhone = onSubmitPhone,
+                            onSubmitCode = onSubmitCode,
+                            onSubmitPassword = onSubmitPassword,
+                        )
                     }
 
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "Not affiliated with Telegram. Fake mode does not connect to Telegram.",
+                        text = "Not affiliated with Telegram. Real mode connects directly through TDLib.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AuthForm(
+    visibleStep: AuthState,
+    phone: String,
+    onPhoneChange: (String) -> Unit,
+    code: String,
+    onCodeChange: (String) -> Unit,
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    onSubmitPhone: (String) -> Unit,
+    onSubmitCode: (String) -> Unit,
+    onSubmitPassword: (String) -> Unit,
+) {
+    when (visibleStep) {
+        AuthState.WaitingForCode,
+        AuthState.SubmittingCode,
+        -> {
+            QuestTextField(
+                value = code,
+                onValueChange = onCodeChange,
+                label = "Telegram login code",
+                keyboardType = KeyboardType.Number,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            LargeActionButton(text = "Continue", onClick = { onSubmitCode(code) })
+        }
+        AuthState.WaitingForPassword,
+        AuthState.SubmittingPassword,
+        -> {
+            QuestTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = "Two-step password",
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            LargeActionButton(text = "Unlock", onClick = { onSubmitPassword(password) })
+        }
+        else -> {
+            QuestTextField(
+                value = phone,
+                onValueChange = onPhoneChange,
+                label = "Phone number (+ country code)",
+                keyboardType = KeyboardType.Phone,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            LargeActionButton(text = "Continue", onClick = { onSubmitPhone(phone) })
         }
     }
 }

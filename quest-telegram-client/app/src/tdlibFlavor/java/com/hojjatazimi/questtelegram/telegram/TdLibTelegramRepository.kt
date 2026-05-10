@@ -38,14 +38,17 @@ class TdLibTelegramRepository(
             _authState.value = AuthState.Error("Use international phone format, starting with + and country code.")
             return
         }
+        _authState.value = AuthState.SubmittingPhoneNumber
         client.submitPhoneNumber(cleanPhone)
     }
 
     override suspend fun submitAuthCode(code: String) {
+        _authState.value = AuthState.SubmittingCode
         client.submitAuthCode(code)
     }
 
     override suspend fun submitPassword(password: String) {
+        _authState.value = AuthState.SubmittingPassword
         client.submitPassword(password)
     }
 

@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,8 +22,20 @@ import com.hojjatazimi.questtelegram.ui.screens.LoginScreen
 fun AppNavigation(viewModel: QuestTelegramViewModel) {
     val navController = rememberNavController()
     val authState by viewModel.authState.collectAsState()
+    var lastLoginStep by remember { mutableStateOf<AuthState>(AuthState.WaitingForPhoneNumber) }
 
     LaunchedEffect(authState) {
+        when (authState) {
+            AuthState.WaitingForPhoneNumber,
+            AuthState.WaitingForCode,
+            AuthState.WaitingForPassword,
+            AuthState.SubmittingPhoneNumber,
+            AuthState.SubmittingCode,
+            AuthState.SubmittingPassword,
+            -> lastLoginStep = authState
+            else -> Unit
+        }
+
         when (authState) {
             AuthState.Ready -> {
                 viewModel.loadChats()
@@ -44,6 +59,7 @@ fun AppNavigation(viewModel: QuestTelegramViewModel) {
         composable(Routes.Login) {
             LoginScreen(
                 authState = authState,
+                lastLoginStep = lastLoginStep,
                 onSubmitPhone = viewModel::submitPhoneNumber,
                 onSubmitCode = viewModel::submitCode,
                 onSubmitPassword = viewModel::submitPassword,

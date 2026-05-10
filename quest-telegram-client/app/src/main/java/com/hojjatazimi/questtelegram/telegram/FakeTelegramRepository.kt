@@ -71,6 +71,7 @@ class FakeTelegramRepository : TelegramRepository {
             _authState.value = AuthState.Error("Enter a full phone number for the fake sign-in flow.")
             return
         }
+        _authState.value = AuthState.SubmittingPhoneNumber
         delay(350)
         _authState.value = AuthState.WaitingForCode
     }
@@ -80,6 +81,7 @@ class FakeTelegramRepository : TelegramRepository {
             _authState.value = AuthState.Error("Enter any three or more digits to continue in fake mode.")
             return
         }
+        _authState.value = AuthState.SubmittingCode
         delay(250)
         _authState.value = AuthState.Ready
     }
@@ -89,6 +91,7 @@ class FakeTelegramRepository : TelegramRepository {
             _authState.value = AuthState.Error("Enter a password to continue in fake mode.")
             return
         }
+        _authState.value = AuthState.SubmittingPassword
         delay(250)
         _authState.value = AuthState.Ready
     }
