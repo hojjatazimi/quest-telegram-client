@@ -1,5 +1,7 @@
 package com.hojjatazimi.questtelegram.ui.components
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,9 +19,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,20 +54,7 @@ fun ChatRow(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Surface(
-                modifier = Modifier.size(52.dp),
-                shape = CircleShape,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-            ) {
-                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = chat.title.take(1).uppercase(),
-                        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
+            ChatAvatar(chat = chat, selected = selected)
             Spacer(Modifier.width(18.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -96,6 +88,58 @@ fun ChatRow(
                         }
                     }
                 }
+                chat.presenceText?.takeIf { it.isNotBlank() }?.let { presence ->
+                    Text(
+                        text = presence,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (presence == "online") {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatAvatar(
+    chat: ChatSummary,
+    selected: Boolean,
+) {
+    val image = remember(chat.avatarPhotoPath) {
+        chat.avatarPhotoPath
+            ?.takeIf { it.isNotBlank() }
+            ?.let(BitmapFactory::decodeFile)
+            ?.asImageBitmap()
+    }
+
+    Surface(
+        modifier = Modifier
+            .size(52.dp)
+            .clip(CircleShape),
+        shape = CircleShape,
+        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+    ) {
+        if (image != null) {
+            Image(
+                bitmap = image,
+                contentDescription = null,
+                modifier = Modifier.size(52.dp),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = chat.title.take(1).uppercase(),
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }

@@ -40,6 +40,7 @@ class TdLibClient(
     private val chats = ConcurrentHashMap<Long, TdApi.Chat>()
     private val users = ConcurrentHashMap<Long, TdApi.User>()
     private val messagesByChat = ConcurrentHashMap<Long, MutableList<MessageItem>>()
+    private val avatarFileChatIds = ConcurrentHashMap<Int, MutableSet<Long>>()
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
     private val weekdayFormat = SimpleDateFormat("EEE", Locale.US)
     private val dateFormat = SimpleDateFormat("MMM d", Locale.US)
@@ -166,6 +167,11 @@ class TdLibClient(
                 chats[updateTitle.chatId]?.title = updateTitle.title
                 emitChats()
             }
+            TdApi.UpdateChatPhoto.CONSTRUCTOR -> {
+                val photo = update as TdApi.UpdateChatPhoto
+                chats[photo.chatId]?.photo = photo.photo
+                emitChats()
+            }
             TdApi.UpdateChatLastMessage.CONSTRUCTOR -> {
                 val lastMessage = update as TdApi.UpdateChatLastMessage
                 chats[lastMessage.chatId]?.let { chat ->
@@ -196,9 +202,24 @@ class TdLibClient(
                 chats[readInbox.chatId]?.unreadCount = readInbox.unreadCount
                 emitChats()
             }
+            TdApi.UpdateChatReadOutbox.CONSTRUCTOR -> {
+                val readOutbox = update as TdApi.UpdateChatReadOutbox
+                chats[readOutbox.chatId]?.lastReadOutboxMessageId = readOutbox.lastReadOutboxMessageId
+                refreshMessageReadStates(readOutbox.chatId, readOutbox.lastReadOutboxMessageId)
+            }
             TdApi.UpdateUser.CONSTRUCTOR -> {
                 val user = (update as TdApi.UpdateUser).user
                 users[user.id] = user
+                emitChats()
+            }
+            TdApi.UpdateUserStatus.CONSTRUCTOR -> {
+                val status = update as TdApi.UpdateUserStatus
+                users[status.userId]?.status = status.status
+                emitChats()
+            }
+            TdApi.UpdateFile.CONSTRUCTOR -> {
+                val file = (update as TdApi.UpdateFile).file
+                handleUpdatedFile(file)
             }
             TdApi.UpdateNewMessage.CONSTRUCTOR -> {
                 val message = mapMessage((update as TdApi.UpdateNewMessage).message) ?: return
@@ -212,6 +233,17 @@ class TdLibClient(
                 val failed = update as TdApi.UpdateMessageSendFailed
                 val message = mapMessage(failed.message) ?: return
                 upsertMessage(message.chatId, message.copy(status = MessageStatus.Failed))
+            }
+            TdApi.UpdateMessageInteractionInfo.CONSTRUCTOR -> {
+                val interaction = update as TdApi.UpdateMessageInteractionInfo
+                val existing = messagesByChat[interaction.chatId]?.firstOrNull { it.id == interaction.messageId } ?: return
+                val status = if (interaction.interactionInfo?.viewCount?.let { it > 0 } == true) {
+                    MessageStatus.Read
+                } else {
+                    existing.status
+                }
+                val updated = existing.copy(status = status, seenText = seenText(status, interaction.interactionInfo?.viewCount))
+                upsertMessage(interaction.chatId, updated)
             }
         }
     }
@@ -310,10 +342,13 @@ class TdLibClient(
             timestamp = chat.lastMessage?.date?.let(::formatUnixTime).orEmpty(),
             unreadCount = chat.unreadCount,
             isMuted = chat.notificationSettings?.muteFor != 0,
+            avatarPhotoPath = avatarPhotoPath(chat),
+            presenceText = presenceText(chat),
         )
     }
 
     private fun mapMessage(message: TdApi.Message): MessageItem? {
+        val status = messageStatus(message)
         return MessageItem(
             id = message.id,
             chatId = message.chatId,
@@ -321,8 +356,41 @@ class TdLibClient(
             text = messagePreview(message),
             timestamp = formatUnixTime(message.date),
             isOutgoing = message.isOutgoing,
-            status = messageStatus(message),
+            status = status,
+            seenText = seenText(status, message.interactionInfo?.viewCount),
         )
+    }
+
+    private fun avatarPhotoPath(chat: TdApi.Chat): String? {
+        val smallPhoto = chat.photo?.small ?: return null
+        avatarFileChatIds.getOrPut(smallPhoto.id) { ConcurrentHashMap.newKeySet() }.add(chat.id)
+        return if (smallPhoto.local?.isDownloadingCompleted == true && smallPhoto.local?.path?.isNotBlank() == true) {
+            smallPhoto.local.path
+        } else {
+            client?.send(TdApi.DownloadFile(smallPhoto.id, 8, 0, 0, false), silentHandler())
+            null
+        }
+    }
+
+    private fun presenceText(chat: TdApi.Chat): String? {
+        return when (val type = chat.type) {
+            is TdApi.ChatTypePrivate -> users[type.userId]?.status?.let(::userStatusText)
+            is TdApi.ChatTypeBasicGroup -> "group"
+            is TdApi.ChatTypeSupergroup -> "group"
+            is TdApi.ChatTypeSecret -> "secret chat"
+            else -> null
+        }
+    }
+
+    private fun userStatusText(status: TdApi.UserStatus): String {
+        return when (status) {
+            is TdApi.UserStatusOnline -> "online"
+            is TdApi.UserStatusOffline -> "last seen ${formatUnixTime(status.wasOnline)}"
+            is TdApi.UserStatusRecently -> "last seen recently"
+            is TdApi.UserStatusLastWeek -> "last seen last week"
+            is TdApi.UserStatusLastMonth -> "last seen last month"
+            else -> "last seen unavailable"
+        }
     }
 
     private fun upsertMessage(chatId: Long, message: MessageItem) {
@@ -338,6 +406,33 @@ class TdLibClient(
         }
         if (currentChatId == chatId) {
             listener.onMessages(chatId, messages.toList())
+        }
+    }
+
+    private fun refreshMessageReadStates(chatId: Long, lastReadOutboxMessageId: Long) {
+        val messages = messagesByChat[chatId] ?: return
+        val updated = messages.map { message ->
+            if (message.isOutgoing && message.id <= lastReadOutboxMessageId && message.status == MessageStatus.Sent) {
+                message.copy(status = MessageStatus.Read, seenText = "seen")
+            } else {
+                message
+            }
+        }
+        messages.clear()
+        messages.addAll(updated)
+        if (currentChatId == chatId) {
+            listener.onMessages(chatId, updated)
+        }
+    }
+
+    private fun handleUpdatedFile(file: TdApi.File) {
+        val chatIds = avatarFileChatIds[file.id].orEmpty()
+        if (chatIds.isEmpty()) return
+        if (file.local?.isDownloadingCompleted == true) {
+            chatIds.forEach { chatId ->
+                chats[chatId]?.photo?.small = file
+            }
+            emitChats()
         }
     }
 
@@ -369,11 +464,24 @@ class TdLibClient(
     }
 
     private fun messageStatus(message: TdApi.Message): MessageStatus {
+        val lastReadOutboxMessageId = chats[message.chatId]?.lastReadOutboxMessageId ?: 0L
         return when {
             message.sendingState is TdApi.MessageSendingStatePending -> MessageStatus.Sending
             message.sendingState is TdApi.MessageSendingStateFailed -> MessageStatus.Failed
-            message.isOutgoing && message.interactionInfo?.viewCount != null -> MessageStatus.Read
+            message.isOutgoing && lastReadOutboxMessageId >= message.id -> MessageStatus.Read
+            message.isOutgoing && message.interactionInfo?.viewCount?.let { it > 0 } == true -> MessageStatus.Read
             else -> MessageStatus.Sent
+        }
+    }
+
+    private fun seenText(status: MessageStatus, viewCount: Int?): String? {
+        return when {
+            viewCount != null && viewCount > 0 -> "$viewCount views"
+            status == MessageStatus.Read -> "seen"
+            status == MessageStatus.Sent -> "sent"
+            status == MessageStatus.Sending -> "sending"
+            status == MessageStatus.Failed -> "failed"
+            else -> null
         }
     }
 

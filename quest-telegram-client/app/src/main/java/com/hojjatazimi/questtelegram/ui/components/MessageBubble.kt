@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.hojjatazimi.questtelegram.telegram.MessageItem
+import com.hojjatazimi.questtelegram.telegram.MessageStatus
 
 @Composable
 fun MessageBubble(
@@ -67,13 +68,23 @@ fun MessageBubble(
                         style = MaterialTheme.typography.labelMedium,
                         color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Text(
-                        text = message.status.name.lowercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    if (message.isOutgoing) {
+                        Text(
+                            text = message.seenText ?: message.status.label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+private val MessageStatus.label: String
+    get() = when (this) {
+        MessageStatus.Sending -> "sending"
+        MessageStatus.Sent -> "sent"
+        MessageStatus.Failed -> "failed"
+        MessageStatus.Read -> "seen"
+    }

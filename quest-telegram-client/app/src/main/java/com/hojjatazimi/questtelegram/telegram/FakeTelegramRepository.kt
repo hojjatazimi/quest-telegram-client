@@ -32,6 +32,7 @@ class FakeTelegramRepository : TelegramRepository {
             timestamp = "09:45",
             unreadCount = 2,
             isMuted = false,
+            presenceText = "online",
         ),
         ChatSummary(
             id = 2,
@@ -40,6 +41,7 @@ class FakeTelegramRepository : TelegramRepository {
             timestamp = "Yesterday",
             unreadCount = 0,
             isMuted = false,
+            presenceText = "last seen recently",
         ),
         ChatSummary(
             id = 3,
@@ -48,6 +50,7 @@ class FakeTelegramRepository : TelegramRepository {
             timestamp = "Mon",
             unreadCount = 4,
             isMuted = true,
+            presenceText = "group",
         ),
     )
 
@@ -165,5 +168,5 @@ class FakeTelegramRepository : TelegramRepository {
         text: String,
         timestamp: String,
         status: MessageStatus = MessageStatus.Read,
-    ) = MessageItem(id, chatId, "You", text, timestamp, isOutgoing = true, status = status)
+    ) = MessageItem(id, chatId, "You", text, timestamp, isOutgoing = true, status = status, seenText = "seen")
 }

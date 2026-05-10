@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.hojjatazimi.questtelegram.telegram.ChatMessagesState
 import com.hojjatazimi.questtelegram.telegram.ChatSummary
 import com.hojjatazimi.questtelegram.telegram.MessageItem
+import com.hojjatazimi.questtelegram.ui.components.ChatAvatar
 import com.hojjatazimi.questtelegram.ui.components.ChatRow
 import com.hojjatazimi.questtelegram.ui.components.MessageBubble
 import com.hojjatazimi.questtelegram.ui.components.QuestTextField
@@ -293,7 +294,11 @@ private fun ConversationHeader(
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        if (chat != null) {
+            ChatAvatar(chat = chat, selected = false)
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = chat?.title ?: "Conversation",
@@ -301,7 +306,7 @@ private fun ConversationHeader(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = statusText,
+                text = listOfNotNull(statusText, chat?.presenceText).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (messagesState.takeIfForChat(currentChatId) is ChatMessagesState.Error) {
                     MaterialTheme.colorScheme.error

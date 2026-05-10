@@ -7,6 +7,8 @@ data class ChatSummary(
     val timestamp: String,
     val unreadCount: Int,
     val isMuted: Boolean,
+    val avatarPhotoPath: String? = null,
+    val presenceText: String? = null,
 )
 
 sealed class ChatListState {
@@ -31,6 +33,7 @@ data class MessageItem(
     val timestamp: String,
     val isOutgoing: Boolean,
     val status: MessageStatus,
+    val seenText: String? = null,
 )
 
 enum class MessageStatus {
