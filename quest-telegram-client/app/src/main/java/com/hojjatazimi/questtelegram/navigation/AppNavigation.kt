@@ -67,12 +67,15 @@ fun AppNavigation(viewModel: QuestTelegramViewModel) {
         }
         composable(Routes.ChatList) {
             val chats by viewModel.chats.collectAsState()
+            val chatListState by viewModel.chatListState.collectAsState()
             ChatListScreen(
                 chats = chats,
+                chatListState = chatListState,
                 onOpenChat = { chatId ->
                     viewModel.openChat(chatId)
                     navController.navigate(Routes.chat(chatId))
                 },
+                onRefresh = viewModel::loadChats,
                 onLogout = viewModel::logout,
             )
         }

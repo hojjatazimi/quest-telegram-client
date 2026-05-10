@@ -12,6 +12,9 @@ class FakeTelegramRepository : TelegramRepository {
     private val _chats = MutableStateFlow<List<ChatSummary>>(emptyList())
     override val chats: StateFlow<List<ChatSummary>> = _chats.asStateFlow()
 
+    private val _chatListState = MutableStateFlow<ChatListState>(ChatListState.Idle)
+    override val chatListState: StateFlow<ChatListState> = _chatListState.asStateFlow()
+
     private val _currentMessages = MutableStateFlow<List<MessageItem>>(emptyList())
     override val currentMessages: StateFlow<List<MessageItem>> = _currentMessages.asStateFlow()
 
@@ -97,7 +100,9 @@ class FakeTelegramRepository : TelegramRepository {
     }
 
     override suspend fun loadChats() {
+        _chatListState.value = ChatListState.Loading
         _chats.value = fakeChats
+        _chatListState.value = ChatListState.Loaded(isEmpty = fakeChats.isEmpty())
     }
 
     override suspend fun openChat(chatId: Long) {
@@ -132,6 +137,7 @@ class FakeTelegramRepository : TelegramRepository {
         activeChatId = null
         _currentMessages.value = emptyList()
         _chats.value = emptyList()
+        _chatListState.value = ChatListState.Idle
         _authState.value = AuthState.WaitingForPhoneNumber
     }
 

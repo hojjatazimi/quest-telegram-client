@@ -10,6 +10,7 @@ class QuestTelegramViewModel(
 ) : ViewModel() {
     val authState = repository.authState
     val chats = repository.chats
+    val chatListState = repository.chatListState
     val currentMessages = repository.currentMessages
 
     init {

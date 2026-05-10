@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface TelegramRepository {
     val authState: StateFlow<AuthState>
     val chats: StateFlow<List<ChatSummary>>
+    val chatListState: StateFlow<ChatListState>
     val currentMessages: StateFlow<List<MessageItem>>
 
     suspend fun initialize()

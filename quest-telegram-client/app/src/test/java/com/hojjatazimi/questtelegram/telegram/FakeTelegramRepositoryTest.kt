@@ -24,6 +24,7 @@ class FakeTelegramRepositoryTest {
 
         repository.loadChats()
         assertEquals(3, repository.chats.value.size)
+        assertEquals(ChatListState.Loaded(isEmpty = false), repository.chatListState.value)
 
         val chatId = repository.chats.value.first().id
         repository.openChat(chatId)
@@ -65,6 +66,7 @@ class FakeTelegramRepositoryTest {
 
         assertEquals(AuthState.WaitingForPhoneNumber, repository.authState.value)
         assertTrue(repository.chats.value.isEmpty())
+        assertEquals(ChatListState.Idle, repository.chatListState.value)
         assertTrue(repository.currentMessages.value.isEmpty())
     }
 

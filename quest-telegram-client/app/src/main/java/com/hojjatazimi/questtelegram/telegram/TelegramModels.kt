@@ -9,6 +9,13 @@ data class ChatSummary(
     val isMuted: Boolean,
 )
 
+sealed class ChatListState {
+    data object Idle : ChatListState()
+    data object Loading : ChatListState()
+    data class Loaded(val isEmpty: Boolean) : ChatListState()
+    data class Error(val message: String) : ChatListState()
+}
+
 data class MessageItem(
     val id: Long,
     val chatId: Long,

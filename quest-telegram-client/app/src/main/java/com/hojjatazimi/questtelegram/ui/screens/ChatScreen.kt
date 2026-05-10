@@ -2,6 +2,7 @@ package com.hojjatazimi.questtelegram.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,12 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +49,13 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
 ) {
     var draft by remember { mutableStateOf("") }
+    val messageListState = rememberLazyListState()
+
+    LaunchedEffect(currentChatId, messages.size) {
+        if (messages.isNotEmpty()) {
+            messageListState.animateScrollToItem(messages.lastIndex)
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -131,13 +141,20 @@ fun ChatScreen(
                         ) {
                             ConversationHeader(chat = chat)
                             LazyColumn(
+                                state = messageListState,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
-                                items(messages, key = { it.id }) { message ->
-                                    MessageBubble(message = message)
+                                if (messages.isEmpty()) {
+                                    item {
+                                        EmptyConversationState()
+                                    }
+                                } else {
+                                    items(messages, key = { it.id }) { message ->
+                                        MessageBubble(message = message)
+                                    }
                                 }
                             }
                             Surface(
@@ -175,6 +192,32 @@ fun ChatScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyConversationState() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 46.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = "No messages loaded yet",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Telegram may still be syncing this conversation.",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

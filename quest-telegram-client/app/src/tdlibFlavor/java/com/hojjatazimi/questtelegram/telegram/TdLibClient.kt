@@ -3,6 +3,7 @@ package com.hojjatazimi.questtelegram.telegram
 import android.content.Context
 import com.hojjatazimi.questtelegram.config.TelegramConfig
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -39,6 +40,8 @@ class TdLibClient(
     private val users = ConcurrentHashMap<Long, TdApi.User>()
     private val messagesByChat = ConcurrentHashMap<Long, MutableList<MessageItem>>()
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
+    private val weekdayFormat = SimpleDateFormat("EEE", Locale.US)
+    private val dateFormat = SimpleDateFormat("MMM d", Locale.US)
 
     @Volatile
     private var client: Client? = null
@@ -87,7 +90,7 @@ class TdLibClient(
         sendAuth(TdApi.CheckAuthenticationPassword(password), "Failed to submit password.")
     }
 
-    fun loadChats(limit: Int = 50) {
+    fun loadChats(limit: Int = 100) {
         client?.send(TdApi.LoadChats(TdApi.ChatListMain(), limit)) { result ->
             when (result.constructor) {
                 TdApi.Error.CONSTRUCTOR -> {
@@ -168,6 +171,23 @@ class TdLibClient(
                     chat.lastMessage = lastMessage.lastMessage
                     chat.positions = lastMessage.positions
                 }
+                emitChats()
+            }
+            TdApi.UpdateChatPosition.CONSTRUCTOR -> {
+                val positionUpdate = update as TdApi.UpdateChatPosition
+                chats[positionUpdate.chatId]?.let { chat ->
+                    chat.positions = updateChatPositions(chat.positions, positionUpdate.position)
+                }
+                emitChats()
+            }
+            TdApi.UpdateChatDraftMessage.CONSTRUCTOR -> {
+                val draft = update as TdApi.UpdateChatDraftMessage
+                chats[draft.chatId]?.positions = draft.positions
+                emitChats()
+            }
+            TdApi.UpdateChatNotificationSettings.CONSTRUCTOR -> {
+                val settings = update as TdApi.UpdateChatNotificationSettings
+                chats[settings.chatId]?.notificationSettings = settings.notificationSettings
                 emitChats()
             }
             TdApi.UpdateChatReadInbox.CONSTRUCTOR -> {
@@ -256,9 +276,29 @@ class TdLibClient(
 
     private fun emitChats() {
         val summaries = chats.values
-            .sortedWith(compareByDescending<TdApi.Chat> { mainListOrder(it) }.thenBy { it.title.lowercase(Locale.US) })
+            .sortedWith(
+                compareByDescending<TdApi.Chat> { mainListOrder(it) }
+                    .thenByDescending { it.id }
+                    .thenBy { it.title.lowercase(Locale.US) },
+            )
             .map(::mapChat)
         listener.onChats(summaries)
+    }
+
+    private fun updateChatPositions(
+        currentPositions: Array<TdApi.ChatPosition>?,
+        newPosition: TdApi.ChatPosition,
+    ): Array<TdApi.ChatPosition> {
+        val updatedPositions = currentPositions
+            .orEmpty()
+            .filterNot { it.list.constructor == newPosition.list.constructor }
+            .toMutableList()
+
+        if (newPosition.order != 0L) {
+            updatedPositions += newPosition
+        }
+
+        return updatedPositions.toTypedArray()
     }
 
     private fun mapChat(chat: TdApi.Chat): ChatSummary {
@@ -345,7 +385,15 @@ class TdLibClient(
 
     private fun formatUnixTime(seconds: Int): String {
         if (seconds <= 0) return ""
-        return timeFormat.format(Date(seconds * 1000L))
+        val date = Date(seconds * 1000L)
+        val now = Calendar.getInstance()
+        val then = Calendar.getInstance().apply { time = date }
+        return when {
+            now.get(Calendar.YEAR) == then.get(Calendar.YEAR) &&
+                now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR) -> timeFormat.format(date)
+            now.timeInMillis - then.timeInMillis < 7L * 24L * 60L * 60L * 1000L -> weekdayFormat.format(date)
+            else -> dateFormat.format(date)
+        }
     }
 
     private fun silentHandler(): Client.ResultHandler {

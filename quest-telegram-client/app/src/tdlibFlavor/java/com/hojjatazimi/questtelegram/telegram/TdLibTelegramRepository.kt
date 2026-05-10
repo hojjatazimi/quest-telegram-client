@@ -18,6 +18,9 @@ class TdLibTelegramRepository(
     private val _chats = MutableStateFlow<List<ChatSummary>>(emptyList())
     override val chats: StateFlow<List<ChatSummary>> = _chats.asStateFlow()
 
+    private val _chatListState = MutableStateFlow<ChatListState>(ChatListState.Idle)
+    override val chatListState: StateFlow<ChatListState> = _chatListState.asStateFlow()
+
     private val _currentMessages = MutableStateFlow<List<MessageItem>>(emptyList())
     override val currentMessages: StateFlow<List<MessageItem>> = _currentMessages.asStateFlow()
 
@@ -53,6 +56,7 @@ class TdLibTelegramRepository(
     }
 
     override suspend fun loadChats() {
+        _chatListState.value = ChatListState.Loading
         client.loadChats()
     }
 
@@ -70,6 +74,7 @@ class TdLibTelegramRepository(
         client.closeAndClearSession()
         activeChatId = null
         _chats.value = emptyList()
+        _chatListState.value = ChatListState.Idle
         _currentMessages.value = emptyList()
     }
 
@@ -79,6 +84,7 @@ class TdLibTelegramRepository(
 
     override fun onChats(chats: List<ChatSummary>) {
         _chats.value = chats
+        _chatListState.value = ChatListState.Loaded(isEmpty = chats.isEmpty())
     }
 
     override fun onMessages(chatId: Long, messages: List<MessageItem>) {
@@ -102,6 +108,10 @@ class TdLibTelegramRepository(
     }
 
     override fun onError(message: String) {
+        if (_authState.value == AuthState.Ready) {
+            _chatListState.value = ChatListState.Error(message)
+            return
+        }
         _authState.value = AuthState.Error(message)
     }
 }

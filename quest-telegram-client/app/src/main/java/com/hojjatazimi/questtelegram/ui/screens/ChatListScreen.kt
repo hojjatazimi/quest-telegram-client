@@ -23,13 +23,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hojjatazimi.questtelegram.telegram.ChatListState
 import com.hojjatazimi.questtelegram.telegram.ChatSummary
 import com.hojjatazimi.questtelegram.ui.components.ChatRow
 
 @Composable
 fun ChatListScreen(
     chats: List<ChatSummary>,
+    chatListState: ChatListState,
     onOpenChat: (Long) -> Unit,
+    onRefresh: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -70,6 +73,14 @@ fun ChatListScreen(
                     }
                 }
                 OutlinedButton(
+                    onClick = onRefresh,
+                    modifier = Modifier
+                        .height(56.dp)
+                        .padding(end = 12.dp),
+                ) {
+                    Text(text = "Refresh")
+                }
+                OutlinedButton(
                     onClick = onLogout,
                     modifier = Modifier.height(56.dp),
                 ) {
@@ -98,8 +109,27 @@ fun ChatListScreen(
                             .fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        items(chats, key = { it.id }) { chat ->
-                            ChatRow(chat = chat, onClick = { onOpenChat(chat.id) })
+                        if (chats.isEmpty()) {
+                            item {
+                                StatePanel(
+                                    chatListState = chatListState,
+                                    onRefresh = onRefresh,
+                                    compact = true,
+                                )
+                            }
+                        } else {
+                            when (chatListState) {
+                                ChatListState.Loading -> item {
+                                    ListStatusCard(text = "Refreshing chats...")
+                                }
+                                is ChatListState.Error -> item {
+                                    ListStatusCard(text = chatListState.message)
+                                }
+                                else -> Unit
+                            }
+                            items(chats, key = { it.id }) { chat ->
+                                ChatRow(chat = chat, onClick = { onOpenChat(chat.id) })
+                            }
                         }
                     }
                     Surface(
@@ -116,20 +146,29 @@ fun ChatListScreen(
                                 .padding(36.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(14.dp),
-                            ) {
-                                Text(
-                                    text = "Select a conversation",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                                Text(
-                                    text = "TeleQuest keeps the message surface wide and relaxed in headset.",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                            if (chats.isEmpty()) {
+                                StatePanel(chatListState = chatListState, onRefresh = onRefresh)
+                            } else {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    Text(
+                                        text = "Select a conversation",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        text = "${chats.size} chats loaded",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Text(
+                                        text = "TeleQuest keeps the message surface wide and relaxed in headset.",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
@@ -137,6 +176,79 @@ fun ChatListScreen(
             }
             Spacer(Modifier.height(2.dp))
         }
+    }
+}
+
+@Composable
+private fun StatePanel(
+    chatListState: ChatListState,
+    onRefresh: () -> Unit,
+    compact: Boolean = false,
+) {
+    val title = when (chatListState) {
+        ChatListState.Idle -> "No chats loaded"
+        ChatListState.Loading -> "Loading chats..."
+        is ChatListState.Loaded -> if (chatListState.isEmpty) "No chats yet" else "Chats loaded"
+        is ChatListState.Error -> "Could not load chats"
+    }
+    val detail = when (chatListState) {
+        ChatListState.Idle -> "Refresh to load your Telegram chats."
+        ChatListState.Loading -> "TDLib is syncing the main chat list."
+        is ChatListState.Loaded -> if (chatListState.isEmpty) {
+            "No conversations are available in the main chat list yet."
+        } else {
+            "Select a conversation from the list."
+        }
+        is ChatListState.Error -> chatListState.message
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        shape = MaterialTheme.shapes.large,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(if (compact) 20.dp else 30.dp),
+            horizontalAlignment = if (compact) Alignment.Start else Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = title,
+                style = if (compact) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (chatListState !is ChatListState.Loading) {
+                OutlinedButton(
+                    onClick = onRefresh,
+                    modifier = Modifier.height(56.dp),
+                ) {
+                    Text(text = "Refresh")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ListStatusCard(text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
