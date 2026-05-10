@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.hojjatazimi.questtelegram.telegram.ChatListState
 import com.hojjatazimi.questtelegram.telegram.ChatSummary
 import com.hojjatazimi.questtelegram.ui.components.ChatRow
+import com.hojjatazimi.questtelegram.ui.components.TeleQuestLogo
 
 @Composable
 fun ChatListScreen(
@@ -58,7 +58,7 @@ fun ChatListScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    MiniMark()
+                    TeleQuestLogo(size = 58.dp)
                     Column {
                         Text(
                             text = "TeleQuest",
@@ -249,23 +249,5 @@ private fun ListStatusCard(text: String) {
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-@Composable
-private fun MiniMark() {
-    Surface(
-        modifier = Modifier.size(54.dp),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.primary,
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = "TQ",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        }
     }
 }

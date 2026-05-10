@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,13 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.hojjatazimi.questtelegram.telegram.AuthState
 import com.hojjatazimi.questtelegram.ui.components.QuestTextField
+import com.hojjatazimi.questtelegram.ui.components.TeleQuestLogo
 
 @Composable
 fun LoginScreen(
@@ -75,7 +74,7 @@ fun LoginScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(18.dp),
                     ) {
-                        TeleQuestMark()
+                        TeleQuestLogo(size = 74.dp)
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "TeleQuest",
@@ -194,32 +193,6 @@ private fun AuthForm(
                 modifier = Modifier.fillMaxWidth(),
             )
             LargeActionButton(text = "Continue", onClick = { onSubmitPhone(phone) })
-        }
-    }
-}
-
-@Composable
-private fun TeleQuestMark() {
-    Surface(
-        modifier = Modifier.size(74.dp),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.primary,
-        tonalElevation = 8.dp,
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Box(
-                modifier = Modifier
-                    .size(width = 38.dp, height = 28.dp)
-                    .clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)),
-            )
-            Box(
-                modifier = Modifier
-                    .padding(top = 24.dp, start = 16.dp)
-                    .size(width = 14.dp, height = 14.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)),
-            )
         }
     }
 }

@@ -38,6 +38,7 @@ import com.hojjatazimi.questtelegram.ui.components.ChatAvatar
 import com.hojjatazimi.questtelegram.ui.components.ChatRow
 import com.hojjatazimi.questtelegram.ui.components.MessageBubble
 import com.hojjatazimi.questtelegram.ui.components.QuestTextField
+import com.hojjatazimi.questtelegram.ui.components.TeleQuestLogo
 
 @Composable
 fun ChatScreen(
@@ -85,6 +86,7 @@ fun ChatScreen(
                 ) {
                     Text("Back")
                 }
+                TeleQuestLogo(size = 54.dp)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "TeleQuest",
