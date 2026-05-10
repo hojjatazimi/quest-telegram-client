@@ -32,7 +32,13 @@ class TdLibTelegramRepository(
     }
 
     override suspend fun submitPhoneNumber(phone: String) {
-        client.submitPhoneNumber(phone)
+        val cleanPhone = phone.trim()
+        val digitCount = cleanPhone.count { it.isDigit() }
+        if (!cleanPhone.startsWith("+") || digitCount < 8) {
+            _authState.value = AuthState.Error("Use international phone format, starting with + and country code.")
+            return
+        }
+        client.submitPhoneNumber(cleanPhone)
     }
 
     override suspend fun submitAuthCode(code: String) {

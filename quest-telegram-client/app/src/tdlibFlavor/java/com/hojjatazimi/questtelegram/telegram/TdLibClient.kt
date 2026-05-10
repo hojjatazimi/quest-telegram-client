@@ -59,7 +59,7 @@ class TdLibClient(
                 { error -> listener.onError("TDLib default error: ${error.message ?: "unknown error"}") },
             )
         }.onFailure {
-            listener.onError("TDLib failed to start. Confirm tdlib.jar and libtdjni.so are installed for the tdlib flavor.")
+            listener.onError("TDLib failed to start. Confirm generated TDLib sources and libtdjni.so are installed.")
         }
     }
 
@@ -72,8 +72,9 @@ class TdLibClient(
     }
 
     fun submitPhoneNumber(phone: String) {
+        val cleanPhone = phone.trim()
         sendAuth(
-            TdApi.SetAuthenticationPhoneNumber(phone, null),
+            TdApi.SetAuthenticationPhoneNumber(cleanPhone, null),
             "Failed to submit phone number.",
         )
     }
@@ -240,9 +241,17 @@ class TdLibClient(
     private fun sendAuth(function: TdApi.Function<out TdApi.Object>, fallbackMessage: String) {
         client?.send(function) { result ->
             if (result.constructor == TdApi.Error.CONSTRUCTOR) {
-                listener.onError(fallbackMessage)
+                listener.onError("$fallbackMessage ${safeErrorMessage(result as TdApi.Error)}")
             }
         } ?: listener.onError("TDLib is not initialized.")
+    }
+
+    private fun safeErrorMessage(error: TdApi.Error): String {
+        val message = error.message
+            ?.takeIf { it.isNotBlank() }
+            ?.replace(Regex("[+]?\\d[\\d\\s().-]{5,}"), "[redacted]")
+            ?: "TDLib error ${error.code}."
+        return "($message)"
     }
 
     private fun emitChats() {
