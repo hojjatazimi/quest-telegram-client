@@ -28,6 +28,8 @@ class TdLibClient(
     interface Listener {
         fun onAuthState(authState: AuthState)
         fun onChats(chats: List<ChatSummary>)
+        fun onChatLoadStarted(targetCount: Int)
+        fun onChatLoadFinished()
         fun onMessages(chatId: Long, messages: List<MessageItem>)
         fun onMessageAdded(chatId: Long, message: MessageItem)
         fun onMessageUpdated(chatId: Long, message: MessageItem)
@@ -93,6 +95,7 @@ class TdLibClient(
     }
 
     fun loadChats(limit: Int = 100) {
+        listener.onChatLoadStarted(limit)
         client?.send(TdApi.LoadChats(TdApi.ChatListMain(), limit)) { result ->
             when (result.constructor) {
                 TdApi.Error.CONSTRUCTOR -> {
@@ -101,8 +104,12 @@ class TdLibClient(
                         listener.onError("Failed to load chats.")
                     }
                     emitChats()
+                    listener.onChatLoadFinished()
                 }
-                TdApi.Ok.CONSTRUCTOR -> emitChats()
+                TdApi.Ok.CONSTRUCTOR -> {
+                    emitChats()
+                    listener.onChatLoadFinished()
+                }
             }
         }
         emitChats()

@@ -13,7 +13,7 @@ data class ChatSummary(
 
 sealed class ChatListState {
     data object Idle : ChatListState()
-    data object Loading : ChatListState()
+    data class Loading(val loadedCount: Int, val targetCount: Int) : ChatListState()
     data class Loaded(val isEmpty: Boolean) : ChatListState()
     data class Error(val message: String) : ChatListState()
 }

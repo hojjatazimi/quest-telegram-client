@@ -106,7 +106,8 @@ class FakeTelegramRepository : TelegramRepository {
     }
 
     override suspend fun loadChats() {
-        _chatListState.value = ChatListState.Loading
+        _chatListState.value = ChatListState.Loading(loadedCount = 0, targetCount = fakeChats.size)
+        delay(120)
         _chats.value = fakeChats
         _chatListState.value = ChatListState.Loaded(isEmpty = fakeChats.isEmpty())
     }

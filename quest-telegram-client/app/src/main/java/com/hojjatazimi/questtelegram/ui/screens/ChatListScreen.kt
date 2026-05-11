@@ -119,12 +119,12 @@ fun ChatListScreen(
                                 )
                             }
                         } else {
-                            when (chatListState) {
-                                ChatListState.Loading -> item {
-                                    ListStatusCard(text = "Refreshing chats...")
+                            when (val state = chatListState) {
+                                is ChatListState.Loading -> item {
+                                    ListStatusCard(text = "Fetching chats ${state.loadedCount}/${state.targetCount}")
                                 }
                                 is ChatListState.Error -> item {
-                                    ListStatusCard(text = chatListState.message)
+                                    ListStatusCard(text = state.message)
                                 }
                                 else -> Unit
                             }
@@ -159,7 +159,9 @@ fun ChatListScreen(
                                         style = MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.SemiBold,
                                     )
-                                    ChatSyncProgress(chatListState = chatListState)
+                                    if (chatListState is ChatListState.Loading) {
+                                        ChatFetchProgress(chatListState = chatListState)
+                                    }
                                     Text(
                                         text = "TeleQuest keeps the message surface wide and relaxed in headset.",
                                         style = MaterialTheme.typography.titleMedium,
@@ -177,19 +179,22 @@ fun ChatListScreen(
 }
 
 @Composable
-private fun ChatSyncProgress(chatListState: ChatListState) {
-    if (chatListState is ChatListState.Loading) {
+private fun ChatFetchProgress(chatListState: ChatListState.Loading) {
+    val progress = (chatListState.loadedCount.toFloat() / chatListState.targetCount.coerceAtLeast(1))
+        .coerceIn(0f, 1f)
+    Column(
+        modifier = Modifier.widthIn(max = 360.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         LinearProgressIndicator(
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .fillMaxWidth(),
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth(),
         )
-    } else {
-        LinearProgressIndicator(
-            progress = { 1f },
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .fillMaxWidth(),
+        Text(
+            text = "Fetching chats ${chatListState.loadedCount}/${chatListState.targetCount}",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -202,13 +207,13 @@ private fun StatePanel(
 ) {
     val title = when (chatListState) {
         ChatListState.Idle -> "No chats loaded"
-        ChatListState.Loading -> "Loading chats..."
+        is ChatListState.Loading -> "Loading chats..."
         is ChatListState.Loaded -> if (chatListState.isEmpty) "No chats yet" else "Chats loaded"
         is ChatListState.Error -> "Could not load chats"
     }
     val detail = when (chatListState) {
         ChatListState.Idle -> "Refresh to load your Telegram chats."
-        ChatListState.Loading -> "TDLib is syncing the main chat list."
+        is ChatListState.Loading -> "Fetched ${chatListState.loadedCount} of ${chatListState.targetCount} requested chats."
         is ChatListState.Loaded -> if (chatListState.isEmpty) {
             "No conversations are available in the main chat list yet."
         } else {
@@ -238,6 +243,9 @@ private fun StatePanel(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (chatListState is ChatListState.Loading) {
+                ChatFetchProgress(chatListState = chatListState)
+            }
             if (chatListState !is ChatListState.Loading) {
                 OutlinedButton(
                     onClick = onRefresh,

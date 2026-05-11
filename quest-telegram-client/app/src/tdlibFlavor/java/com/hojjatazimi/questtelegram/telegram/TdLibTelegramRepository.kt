@@ -28,6 +28,7 @@ class TdLibTelegramRepository(
     override val currentMessagesState: StateFlow<ChatMessagesState> = _currentMessagesState.asStateFlow()
 
     private var activeChatId: Long? = null
+    private var chatLoadTargetCount = 100
 
     override suspend fun initialize() {
         runCatching {
@@ -59,7 +60,6 @@ class TdLibTelegramRepository(
     }
 
     override suspend fun loadChats() {
-        _chatListState.value = ChatListState.Loading
         client.loadChats()
     }
 
@@ -90,7 +90,26 @@ class TdLibTelegramRepository(
 
     override fun onChats(chats: List<ChatSummary>) {
         _chats.value = chats
-        _chatListState.value = ChatListState.Loaded(isEmpty = chats.isEmpty())
+        if (_chatListState.value is ChatListState.Loading) {
+            _chatListState.value = ChatListState.Loading(
+                loadedCount = chats.size.coerceAtMost(chatLoadTargetCount),
+                targetCount = chatLoadTargetCount,
+            )
+        } else {
+            _chatListState.value = ChatListState.Loaded(isEmpty = chats.isEmpty())
+        }
+    }
+
+    override fun onChatLoadStarted(targetCount: Int) {
+        chatLoadTargetCount = targetCount.coerceAtLeast(1)
+        _chatListState.value = ChatListState.Loading(
+            loadedCount = _chats.value.size.coerceAtMost(chatLoadTargetCount),
+            targetCount = chatLoadTargetCount,
+        )
+    }
+
+    override fun onChatLoadFinished() {
+        _chatListState.value = ChatListState.Loaded(isEmpty = _chats.value.isEmpty())
     }
 
     override fun onMessages(chatId: Long, messages: List<MessageItem>) {
