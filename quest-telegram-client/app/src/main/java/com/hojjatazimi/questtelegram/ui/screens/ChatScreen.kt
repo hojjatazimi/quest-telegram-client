@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,18 +55,6 @@ fun ChatScreen(
 ) {
     var draft by remember { mutableStateOf("") }
     val messageListState = rememberLazyListState()
-    var pendingInitialScrollChatId by remember { mutableStateOf<Long?>(currentChatId) }
-
-    LaunchedEffect(currentChatId) {
-        pendingInitialScrollChatId = currentChatId
-    }
-
-    LaunchedEffect(currentChatId, messages.lastOrNull()?.id) {
-        if (messages.isNotEmpty() && pendingInitialScrollChatId == currentChatId) {
-            messageListState.scrollToItem(messages.lastIndex)
-            pendingInitialScrollChatId = null
-        }
-    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
