@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -158,11 +159,7 @@ fun ChatListScreen(
                                         style = MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.SemiBold,
                                     )
-                                    Text(
-                                        text = "${chats.size} chats loaded",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
+                                    ChatSyncProgress(chatListState = chatListState)
                                     Text(
                                         text = "TeleQuest keeps the message surface wide and relaxed in headset.",
                                         style = MaterialTheme.typography.titleMedium,
@@ -176,6 +173,24 @@ fun ChatListScreen(
             }
             Spacer(Modifier.height(2.dp))
         }
+    }
+}
+
+@Composable
+private fun ChatSyncProgress(chatListState: ChatListState) {
+    if (chatListState is ChatListState.Loading) {
+        LinearProgressIndicator(
+            modifier = Modifier
+                .widthIn(max = 320.dp)
+                .fillMaxWidth(),
+        )
+    } else {
+        LinearProgressIndicator(
+            progress = { 1f },
+            modifier = Modifier
+                .widthIn(max = 320.dp)
+                .fillMaxWidth(),
+        )
     }
 }
 
