@@ -54,10 +54,16 @@ fun ChatScreen(
 ) {
     var draft by remember { mutableStateOf("") }
     val messageListState = rememberLazyListState()
+    var pendingInitialScrollChatId by remember { mutableStateOf<Long?>(currentChatId) }
 
-    LaunchedEffect(currentChatId, messages.size) {
-        if (messages.isNotEmpty()) {
-            messageListState.animateScrollToItem(messages.lastIndex)
+    LaunchedEffect(currentChatId) {
+        pendingInitialScrollChatId = currentChatId
+    }
+
+    LaunchedEffect(currentChatId, messages.lastOrNull()?.id) {
+        if (messages.isNotEmpty() && pendingInitialScrollChatId == currentChatId) {
+            messageListState.scrollToItem(messages.lastIndex)
+            pendingInitialScrollChatId = null
         }
     }
 
