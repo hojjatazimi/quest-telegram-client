@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import com.hojjatazimi.questtelegram.ui.components.MessageBubble
 import com.hojjatazimi.questtelegram.ui.components.QuestTextField
 import com.hojjatazimi.questtelegram.ui.components.TeleQuestLogo
 import com.hojjatazimi.questtelegram.ui.theme.TeleQuestLiquidGlass
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(
@@ -55,6 +57,8 @@ fun ChatScreen(
 ) {
     var draft by remember { mutableStateOf("") }
     val messageListState = rememberLazyListState()
+    val scrollScope = rememberCoroutineScope()
+    val visibleMessages = remember(messages) { messages.sortedBy { it.id } }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -141,7 +145,26 @@ fun ChatScreen(
                                 .padding(22.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            ConversationHeader(chat = chat, messagesState = messagesState, currentChatId = currentChatId)
+                            ConversationHeader(
+                                chat = chat,
+                                messagesState = messagesState,
+                                currentChatId = currentChatId,
+                                canScrollMessages = visibleMessages.size > 1,
+                                onScrollOlder = {
+                                    scrollScope.launch {
+                                        messageListState.animateScrollToItem(
+                                            (messageListState.firstVisibleItemIndex - 6).coerceAtLeast(0),
+                                        )
+                                    }
+                                },
+                                onScrollNewer = {
+                                    scrollScope.launch {
+                                        messageListState.animateScrollToItem(
+                                            (messageListState.firstVisibleItemIndex + 6).coerceAtMost(visibleMessages.lastIndex),
+                                        )
+                                    }
+                                },
+                            )
                             LazyColumn(
                                 state = messageListState,
                                 modifier = Modifier
@@ -150,7 +173,7 @@ fun ChatScreen(
                                 verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
                                 val activeState = messagesState.takeIfForChat(currentChatId)
-                                if (messages.isEmpty()) {
+                                if (visibleMessages.isEmpty()) {
                                     item {
                                         ConversationStatePanel(
                                             messagesState = activeState ?: ChatMessagesState.Loading(currentChatId),
@@ -163,7 +186,7 @@ fun ChatScreen(
                                             ConversationStateBanner(messagesState = activeState)
                                         }
                                     }
-                                    items(messages, key = { it.id }) { message ->
+                                    items(visibleMessages, key = { it.id }) { message ->
                                         MessageBubble(message = message)
                                     }
                                 }
@@ -284,6 +307,9 @@ private fun ConversationHeader(
     chat: ChatSummary?,
     messagesState: ChatMessagesState,
     currentChatId: Long,
+    canScrollMessages: Boolean,
+    onScrollOlder: () -> Unit,
+    onScrollNewer: () -> Unit,
 ) {
     val statusText = when (val state = messagesState.takeIfForChat(currentChatId)) {
         is ChatMessagesState.Loading -> "Loading"
@@ -317,17 +343,36 @@ private fun ConversationHeader(
                 },
             )
         }
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f),
-            shape = MaterialTheme.shapes.small,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = chat?.timestamp.orEmpty(),
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            OutlinedButton(
+                onClick = onScrollOlder,
+                enabled = canScrollMessages,
+                modifier = Modifier.height(48.dp),
+            ) {
+                Text("Older")
+            }
+            OutlinedButton(
+                onClick = onScrollNewer,
+                enabled = canScrollMessages,
+                modifier = Modifier.height(48.dp),
+            ) {
+                Text("Newer")
+            }
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f),
+                shape = MaterialTheme.shapes.small,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
+            ) {
+                Text(
+                    text = chat?.timestamp.orEmpty(),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
     Spacer(Modifier.height(2.dp))
