@@ -24,9 +24,10 @@ fun TeleQuestLogo(
     Surface(
         modifier = modifier.size(size),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
-        tonalElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.64f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.72f)),
+        tonalElevation = 2.dp,
+        shadowElevation = 4.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Image(

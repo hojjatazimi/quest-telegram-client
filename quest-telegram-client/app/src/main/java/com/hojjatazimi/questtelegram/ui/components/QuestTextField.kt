@@ -30,11 +30,15 @@ fun QuestTextField(
         singleLine = true,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-            unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.42f),
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
             cursorColor = MaterialTheme.colorScheme.primary,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedLabelColor = MaterialTheme.colorScheme.secondary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,

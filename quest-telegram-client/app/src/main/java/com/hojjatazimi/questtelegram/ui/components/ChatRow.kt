@@ -43,11 +43,12 @@ fun ChatRow(
             .heightIn(min = 88.dp)
             .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
-        color = if (selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-        tonalElevation = if (selected) 3.dp else 1.dp,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.78f) else MaterialTheme.colorScheme.surface,
+        tonalElevation = if (selected) 2.dp else 1.dp,
+        shadowElevation = if (selected) 3.dp else 1.dp,
         border = BorderStroke(
             width = 1.dp,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.58f),
         ),
     ) {
         Row(
@@ -83,7 +84,7 @@ fun ChatRow(
                     )
                     if (chat.unreadCount > 0) {
                         Spacer(Modifier.width(12.dp))
-                        Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                        Badge(containerColor = MaterialTheme.colorScheme.secondary) {
                             Text(text = chat.unreadCount.toString(), color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
@@ -123,7 +124,8 @@ fun ChatAvatar(
             .size(52.dp)
             .clip(CircleShape),
         shape = CircleShape,
-        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)),
     ) {
         if (image != null) {
             Image(
@@ -136,7 +138,7 @@ fun ChatAvatar(
             Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = chat.title.take(1).uppercase(),
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )

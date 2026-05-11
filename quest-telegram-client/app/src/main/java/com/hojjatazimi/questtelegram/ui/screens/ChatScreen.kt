@@ -1,6 +1,7 @@
 package com.hojjatazimi.questtelegram.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import com.hojjatazimi.questtelegram.ui.components.ChatRow
 import com.hojjatazimi.questtelegram.ui.components.MessageBubble
 import com.hojjatazimi.questtelegram.ui.components.QuestTextField
 import com.hojjatazimi.questtelegram.ui.components.TeleQuestLogo
+import com.hojjatazimi.questtelegram.ui.theme.TeleQuestLiquidGlass
 
 @Composable
 fun ChatScreen(
@@ -75,6 +77,7 @@ fun ChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
+                .background(TeleQuestLiquidGlass.appBackgroundBrush())
                 .padding(horizontal = 42.dp, vertical = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -111,10 +114,11 @@ fun ChatScreen(
                     .widthIn(max = 1240.dp)
                     .fillMaxWidth()
                     .weight(1f),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.74f),
                 shape = MaterialTheme.shapes.extraLarge,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
-                tonalElevation = 5.dp,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.74f)),
+                tonalElevation = 2.dp,
+                shadowElevation = 8.dp,
             ) {
                 Row(
                     modifier = Modifier
@@ -140,9 +144,9 @@ fun ChatScreen(
                         modifier = Modifier
                             .weight(0.66f)
                             .fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background.copy(alpha = 0.62f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f),
                         shape = MaterialTheme.shapes.large,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
                     ) {
                         Column(
                             modifier = Modifier
@@ -179,9 +183,9 @@ fun ChatScreen(
                             }
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
                                 shape = MaterialTheme.shapes.large,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
                             ) {
                                 Row(
                                     modifier = Modifier.padding(12.dp),
@@ -201,7 +205,10 @@ fun ChatScreen(
                                             onSend(text)
                                         },
                                         enabled = draft.isNotBlank(),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
                                         modifier = Modifier.height(64.dp),
                                     ) {
                                         Text(text = "Send", style = MaterialTheme.typography.titleMedium)
@@ -272,9 +279,9 @@ private fun ConversationStateBanner(messagesState: ChatMessagesState) {
     }
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
         shape = MaterialTheme.shapes.medium,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
     ) {
         Text(
             text = text,
@@ -324,9 +331,9 @@ private fun ConversationHeader(
             )
         }
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f),
             shape = MaterialTheme.shapes.small,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
         ) {
             Text(
                 text = chat?.timestamp.orEmpty(),

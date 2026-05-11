@@ -30,16 +30,25 @@ fun MessageBubble(
     ) {
         Surface(
             modifier = Modifier.widthIn(max = 560.dp),
-            color = if (message.isOutgoing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            color = if (message.isOutgoing) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.88f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)
+            },
             shape = if (message.isOutgoing) {
                 RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 24.dp, bottomEnd = 8.dp)
             } else {
                 RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 24.dp)
             },
-            tonalElevation = if (message.isOutgoing) 4.dp else 1.dp,
-            border = if (message.isOutgoing) null else BorderStroke(
+            tonalElevation = if (message.isOutgoing) 3.dp else 1.dp,
+            shadowElevation = if (message.isOutgoing) 2.dp else 1.dp,
+            border = BorderStroke(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                color = if (message.isOutgoing) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)
+                } else {
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.56f)
+                },
             ),
         ) {
             Column(
@@ -57,7 +66,7 @@ fun MessageBubble(
                 Text(
                     text = message.text,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                 )
                 Row(
                     modifier = Modifier.align(Alignment.End),
@@ -66,13 +75,13 @@ fun MessageBubble(
                     Text(
                         text = message.timestamp,
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (message.isOutgoing) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (message.isOutgoing) {
                         Text(
                             text = message.seenText ?: message.status.label,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
                 }

@@ -1,6 +1,7 @@
 package com.hojjatazimi.questtelegram.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import com.hojjatazimi.questtelegram.telegram.ChatListState
 import com.hojjatazimi.questtelegram.telegram.ChatSummary
 import com.hojjatazimi.questtelegram.ui.components.ChatRow
 import com.hojjatazimi.questtelegram.ui.components.TeleQuestLogo
+import com.hojjatazimi.questtelegram.ui.theme.TeleQuestLiquidGlass
 
 @Composable
 fun ChatListScreen(
@@ -44,6 +46,7 @@ fun ChatListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(TeleQuestLiquidGlass.appBackgroundBrush())
                 .padding(horizontal = 42.dp, vertical = 30.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,10 +96,11 @@ fun ChatListScreen(
                     .widthIn(max = 1240.dp)
                     .fillMaxWidth()
                     .weight(1f),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
                 shape = MaterialTheme.shapes.extraLarge,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
-                tonalElevation = 4.dp,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.74f)),
+                tonalElevation = 2.dp,
+                shadowElevation = 8.dp,
             ) {
                 Row(
                     modifier = Modifier
@@ -137,9 +141,9 @@ fun ChatListScreen(
                         modifier = Modifier
                             .weight(0.58f)
                             .fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f),
                         shape = MaterialTheme.shapes.large,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
                     ) {
                         Box(
                             modifier = Modifier
@@ -224,9 +228,9 @@ private fun StatePanel(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f),
         shape = MaterialTheme.shapes.large,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
     ) {
         Column(
             modifier = Modifier.padding(if (compact) 20.dp else 30.dp),
@@ -264,7 +268,7 @@ private fun ListStatusCard(text: String) {
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
         shape = MaterialTheme.shapes.medium,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
     ) {
         Text(
             text = text,

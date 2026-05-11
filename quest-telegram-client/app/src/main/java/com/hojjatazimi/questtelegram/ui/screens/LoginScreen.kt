@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.hojjatazimi.questtelegram.telegram.AuthState
 import com.hojjatazimi.questtelegram.ui.components.QuestTextField
 import com.hojjatazimi.questtelegram.ui.components.TeleQuestLogo
+import com.hojjatazimi.questtelegram.ui.theme.TeleQuestLiquidGlass
 
 @Composable
 fun LoginScreen(
@@ -53,7 +54,7 @@ fun LoginScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(TeleQuestLiquidGlass.appBackgroundBrush())
                 .padding(horizontal = 56.dp, vertical = 42.dp),
             contentAlignment = Alignment.Center,
         ) {
@@ -61,10 +62,11 @@ fun LoginScreen(
                 modifier = Modifier
                     .widthIn(max = 720.dp)
                     .fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.76f),
                 shape = MaterialTheme.shapes.extraLarge,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
-                tonalElevation = 6.dp,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.74f)),
+                tonalElevation = 3.dp,
+                shadowElevation = 10.dp,
             ) {
                 Column(
                     modifier = Modifier.padding(34.dp),
@@ -204,7 +206,10 @@ private fun LargeActionButton(
 ) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp),

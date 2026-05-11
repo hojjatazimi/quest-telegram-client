@@ -7,39 +7,100 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+object TeleQuestLiquidGlass {
+    val QuestCyan = Color(0xFF8FEFFF)
+    val IceBlue = Color(0xFFDDF2FF)
+    val SkySignal = Color(0xFF4FAFEA)
+
+    val FrostWhite = Color(0xFFF7FCFF)
+    val GlassMist = Color(0xB8EAF6FD)
+    val CloudGlass = Color(0xD1D6EAF7)
+
+    val GlassFill = Color(0x75DDF2FF)
+    val GlassRim = Color(0xD9CDEEFF)
+    val GlassHighlight = Color(0xEBFFFFFF)
+    val GlassShadow = Color(0x47A8C7DA)
+
+    val TextPrimary = Color(0xFF102A43)
+    val TextSecondary = Color(0xFF6B8498)
+    val TextMuted = Color(0xFF9AAFC0)
+
+    val Success = Color(0xFF5EE6B5)
+    val Warning = Color(0xFFFFD166)
+    val Error = Color(0xFFFF6B8A)
+    val Info = Color(0xFF73C9FF)
+
+    val DarkBackground = Color(0xFF071622)
+    val DarkSurface = Color(0xFF102A3A)
+    val DarkGlow = Color(0xFF143449)
+    val DarkGlassSurface = Color(0x7A23465A)
+    val DarkTextPrimary = Color(0xFFF2FAFF)
+    val DarkTextSecondary = Color(0xFFA8C7DA)
+    val DarkBorder = Color(0x478FEFFF)
+
+    fun brandGradient(): Brush = Brush.linearGradient(
+        colors = listOf(IceBlue, QuestCyan, SkySignal),
+    )
+
+    fun liquidSurfaceGradient(): Brush = Brush.linearGradient(
+        colors = listOf(GlassHighlight, GlassFill, QuestCyan.copy(alpha = 0.22f)),
+    )
+
+    @Composable
+    fun appBackgroundBrush(darkTheme: Boolean = isSystemInDarkTheme()): Brush {
+        return if (darkTheme) {
+            Brush.linearGradient(
+                colors = listOf(DarkBackground, DarkSurface, DarkGlow),
+            )
+        } else {
+            liquidSurfaceGradient()
+        }
+    }
+}
+
 private val DarkQuestColors = darkColorScheme(
-    primary = Color(0xFFA7E8C2),
-    onPrimary = Color(0xFF102019),
-    secondary = Color(0xFF8FD5D8),
-    onSecondary = Color(0xFF102123),
-    tertiary = Color(0xFFE9C98B),
-    background = Color(0xFF0D1114),
-    onBackground = Color(0xFFE9F0EE),
-    surface = Color(0xFF171D21),
-    onSurface = Color(0xFFE9F0EE),
-    surfaceVariant = Color(0xFF20292E),
-    onSurfaceVariant = Color(0xFFB9C7C4),
-    outline = Color(0xFF354247),
+    primary = TeleQuestLiquidGlass.QuestCyan,
+    onPrimary = TeleQuestLiquidGlass.TextPrimary,
+    primaryContainer = TeleQuestLiquidGlass.DarkGlassSurface,
+    onPrimaryContainer = TeleQuestLiquidGlass.DarkTextPrimary,
+    secondary = TeleQuestLiquidGlass.SkySignal,
+    onSecondary = TeleQuestLiquidGlass.TextPrimary,
+    tertiary = TeleQuestLiquidGlass.Success,
+    background = TeleQuestLiquidGlass.DarkBackground,
+    onBackground = TeleQuestLiquidGlass.DarkTextPrimary,
+    surface = TeleQuestLiquidGlass.DarkSurface,
+    onSurface = TeleQuestLiquidGlass.DarkTextPrimary,
+    surfaceVariant = TeleQuestLiquidGlass.DarkGlassSurface,
+    onSurfaceVariant = TeleQuestLiquidGlass.DarkTextSecondary,
+    outline = TeleQuestLiquidGlass.DarkBorder,
+    error = TeleQuestLiquidGlass.Error,
+    onError = TeleQuestLiquidGlass.TextPrimary,
 )
 
 private val LightQuestColors = lightColorScheme(
-    primary = Color(0xFF28684B),
-    onPrimary = Color.White,
-    secondary = Color(0xFF326D70),
-    tertiary = Color(0xFF89651C),
-    background = Color(0xFFF2F5F3),
-    onBackground = Color(0xFF111716),
-    surface = Color.White,
-    onSurface = Color(0xFF111716),
-    surfaceVariant = Color(0xFFE1E9E6),
-    onSurfaceVariant = Color(0xFF40504D),
-    outline = Color(0xFFC4D0CC),
+    primary = TeleQuestLiquidGlass.QuestCyan,
+    onPrimary = TeleQuestLiquidGlass.TextPrimary,
+    primaryContainer = TeleQuestLiquidGlass.IceBlue,
+    onPrimaryContainer = TeleQuestLiquidGlass.TextPrimary,
+    secondary = TeleQuestLiquidGlass.SkySignal,
+    onSecondary = TeleQuestLiquidGlass.TextPrimary,
+    tertiary = TeleQuestLiquidGlass.Success,
+    background = TeleQuestLiquidGlass.FrostWhite,
+    onBackground = TeleQuestLiquidGlass.TextPrimary,
+    surface = TeleQuestLiquidGlass.GlassMist,
+    onSurface = TeleQuestLiquidGlass.TextPrimary,
+    surfaceVariant = TeleQuestLiquidGlass.CloudGlass,
+    onSurfaceVariant = TeleQuestLiquidGlass.TextSecondary,
+    outline = TeleQuestLiquidGlass.GlassRim,
+    error = TeleQuestLiquidGlass.Error,
+    onError = TeleQuestLiquidGlass.TextPrimary,
 )
 
 private val TeleQuestTypography = Typography(
