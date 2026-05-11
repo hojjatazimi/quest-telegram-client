@@ -23,6 +23,7 @@ class FakeTelegramRepository : TelegramRepository {
 
     private var activeChatId: Long? = null
     private var nextMessageId = 10_000L
+    private val loadedMessageChatIds = mutableSetOf<Long>()
 
     private val fakeChats = listOf(
         ChatSummary(
@@ -114,10 +115,17 @@ class FakeTelegramRepository : TelegramRepository {
 
     override suspend fun openChat(chatId: Long) {
         activeChatId = chatId
+        if (chatId in loadedMessageChatIds) {
+            val messages = messagesByChat[chatId].orEmpty()
+            _currentMessages.value = messages
+            _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = messages.isEmpty())
+            return
+        }
         _currentMessages.value = emptyList()
         _currentMessagesState.value = ChatMessagesState.Loading(chatId)
         delay(180)
         val messages = messagesByChat[chatId].orEmpty()
+        loadedMessageChatIds += chatId
         _currentMessages.value = messages
         _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = messages.isEmpty())
     }
@@ -148,6 +156,7 @@ class FakeTelegramRepository : TelegramRepository {
         _authState.value = AuthState.LoggingOut
         delay(200)
         activeChatId = null
+        loadedMessageChatIds.clear()
         _currentMessages.value = emptyList()
         _currentMessagesState.value = ChatMessagesState.Idle
         _chats.value = emptyList()

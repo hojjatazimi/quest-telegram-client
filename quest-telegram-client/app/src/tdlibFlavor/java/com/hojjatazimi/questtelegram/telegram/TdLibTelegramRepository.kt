@@ -29,6 +29,8 @@ class TdLibTelegramRepository(
 
     private var activeChatId: Long? = null
     private var chatLoadTargetCount = 100
+    private val loadedMessageChatIds = mutableSetOf<Long>()
+    private val cachedMessagesByChat = mutableMapOf<Long, List<MessageItem>>()
 
     override suspend fun initialize() {
         runCatching {
@@ -65,9 +67,18 @@ class TdLibTelegramRepository(
 
     override suspend fun openChat(chatId: Long) {
         activeChatId = chatId
-        _currentMessages.value = emptyList()
-        _currentMessagesState.value = ChatMessagesState.Loading(chatId)
-        client.openChat(chatId)
+        val cachedMessages = cachedMessagesByChat[chatId] ?: client.cachedMessages(chatId)
+        if (chatId in loadedMessageChatIds || cachedMessages.isNotEmpty()) {
+            loadedMessageChatIds += chatId
+            cachedMessagesByChat[chatId] = cachedMessages
+            _currentMessages.value = cachedMessages
+            _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = cachedMessages.isEmpty())
+            client.activateCachedChat(chatId)
+        } else {
+            _currentMessages.value = emptyList()
+            _currentMessagesState.value = ChatMessagesState.Loading(chatId)
+            client.openChat(chatId)
+        }
     }
 
     override suspend fun sendTextMessage(chatId: Long, text: String) {
@@ -78,6 +89,8 @@ class TdLibTelegramRepository(
         _authState.value = AuthState.LoggingOut
         client.closeAndClearSession()
         activeChatId = null
+        loadedMessageChatIds.clear()
+        cachedMessagesByChat.clear()
         _chats.value = emptyList()
         _chatListState.value = ChatListState.Idle
         _currentMessages.value = emptyList()
@@ -113,6 +126,8 @@ class TdLibTelegramRepository(
     }
 
     override fun onMessages(chatId: Long, messages: List<MessageItem>) {
+        loadedMessageChatIds += chatId
+        cachedMessagesByChat[chatId] = messages
         if (activeChatId == chatId) {
             _currentMessages.value = messages
             _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = messages.isEmpty())
@@ -120,17 +135,21 @@ class TdLibTelegramRepository(
     }
 
     override fun onMessageAdded(chatId: Long, message: MessageItem) {
+        val cachedMessages = (cachedMessagesByChat[chatId].orEmpty() + message).distinctBy { it.id }.sortedBy { it.id }
+        cachedMessagesByChat[chatId] = cachedMessages
         if (activeChatId == chatId) {
-            _currentMessages.value = (_currentMessages.value + message).distinctBy { it.id }.sortedBy { it.id }
+            _currentMessages.value = cachedMessages
             _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = false)
         }
     }
 
     override fun onMessageUpdated(chatId: Long, message: MessageItem) {
+        cachedMessagesByChat[chatId] = cachedMessagesByChat[chatId]
+            .orEmpty()
+            .map { if (it.id == message.id) message else it }
+            .sortedBy { it.id }
         if (activeChatId == chatId) {
-            _currentMessages.value = _currentMessages.value
-                .map { if (it.id == message.id) message else it }
-                .sortedBy { it.id }
+            _currentMessages.value = cachedMessagesByChat[chatId].orEmpty()
             _currentMessagesState.value = ChatMessagesState.Loaded(chatId, isEmpty = _currentMessages.value.isEmpty())
         }
     }

@@ -115,6 +115,15 @@ class TdLibClient(
         emitChats()
     }
 
+    fun cachedMessages(chatId: Long): List<MessageItem> {
+        return messagesByChat[chatId].orEmpty().toList()
+    }
+
+    fun activateCachedChat(chatId: Long) {
+        currentChatId = chatId
+        client?.send(TdApi.OpenChat(chatId), silentHandler())
+    }
+
     fun openChat(chatId: Long, limit: Int = 50) {
         currentChatId = chatId
         client?.send(TdApi.OpenChat(chatId), silentHandler())

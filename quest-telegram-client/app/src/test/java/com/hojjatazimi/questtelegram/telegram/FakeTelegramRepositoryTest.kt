@@ -92,4 +92,21 @@ class FakeTelegramRepositoryTest {
 
         job.cancel()
     }
+
+    @Test
+    fun reopeningFakeChatUsesCachedMessages() = runTest {
+        val repository = FakeTelegramRepository()
+
+        repository.initialize()
+        repository.submitPhoneNumber("+15551234567")
+        repository.submitAuthCode("12345")
+        repository.loadChats()
+
+        val chatId = repository.chats.value.first().id
+        repository.openChat(chatId)
+        assertEquals(ChatMessagesState.Loaded(chatId, isEmpty = false), repository.currentMessagesState.value)
+
+        repository.openChat(chatId)
+        assertEquals(ChatMessagesState.Loaded(chatId, isEmpty = false), repository.currentMessagesState.value)
+    }
 }
